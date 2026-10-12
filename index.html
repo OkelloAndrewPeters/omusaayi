@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#9B1D35">
+<title>Omusaayi Anaemia Screener</title>
+<meta name="description" content="Open-source, on-device smartphone anaemia screening for pregnant women and adolescent girls. Research prototype by OapAI Technologies.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Young+Serif&display=swap">
+<style>
+/* Layout: a single-column field tool — sticky tab bar, then stacked work panels; the photo canvas and the result sit side by side on wide screens. */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --sunk:#E4E8EC; --ink:#17202A; --muted:#56616D; --line:#D3D9DF;
+  --accent:#9B1D35; --accent-soft:#F6E3E7; --on-accent:#FFFFFF;
+  --ok:#1C7356; --ok-soft:#DFF1EA; --warn:#9A5B00; --warn-soft:#FBEBD2; --crit:#B3261E; --crit-soft:#FADCD9;
+  --font-display:"Young Serif", Georgia, "Times New Roman", serif;
+  --font-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0E1318; --surface:#161E26; --sunk:#1D2731; --ink:#E5EAEF; --muted:#98A4B0; --line:#2A3642;
+  --accent:#E5607A; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
+  --ok:#4FC79F; --ok-soft:#14302A; --warn:#E6A640; --warn-soft:#33260F; --crit:#F27A70; --crit-soft:#3A1915;
+  color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0E1318; --surface:#161E26; --sunk:#1D2731; --ink:#E5EAEF; --muted:#98A4B0; --line:#2A3642;
+  --accent:#E5607A; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
+  --ok:#4FC79F; --ok-soft:#14302A; --warn:#E6A640; --warn-soft:#33260F; --crit:#F27A70; --crit-soft:#3A1915;
+  color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--font-body);margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.2}
+h2{font-family:var(--font-display);font-weight:400;font-size:1.45rem}
+h3{font-size:1rem;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono,.num{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* masthead */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:24px 16px}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{font-family:var(--font-display);font-weight:400;font-size:clamp(1.8rem,5vw,2.4rem);letter-spacing:-.01em}
+.brand h1 span{color:var(--accent)}
+.brand p{color:var(--muted);font-size:.95rem}
+.proto{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--warn);color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:700}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px}
+.tabs button{appearance:none;border:0;background:none;color:var(--muted);font:700 .95rem var(--font-body);padding:12px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .count{font-family:var(--font-data);font-weight:500;font-size:.78rem;background:var(--sunk);border-radius:6px;padding:1px 6px;margin-left:6px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.step{display:flex;align-items:baseline;gap:10px}
+.step b{font-family:var(--font-data);font-weight:500;color:var(--accent);font-size:.9rem}
+
+/* form */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.85rem;font-weight:700}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:vertical}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.92rem}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{appearance:none;font:700 .92rem var(--font-body);border-radius:8px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.small{padding:6px 10px;font-size:.82rem}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* canvas */
+.stage{position:relative;background:var(--sunk);border-radius:8px;overflow:hidden;touch-action:none}
+.stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.hint{font-size:.88rem;color:var(--muted)}
+.qc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.qc li{display:flex;gap:8px;align-items:baseline}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;transform:translateY(-1px)}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--crit)}
+
+/* result */
+.verdict{border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px;border:1.5px solid}
+.verdict.none{background:var(--ok-soft);border-color:var(--ok)}
+.verdict.mild{background:var(--warn-soft);border-color:var(--warn)}
+.verdict.moderate,.verdict.severe{background:var(--crit-soft);border-color:var(--crit)}
+.verdict.unknown{background:var(--sunk);border-color:var(--line)}
+.verdict .big{font-family:var(--font-data);font-size:2.2rem;line-height:1.1;font-weight:500}
+.verdict .big small{font-size:.95rem;color:var(--muted)}
+.chip{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:3px 10px;border:1.5px solid currentColor;width:max-content}
+.chip.none{color:var(--ok)} .chip.mild{color:var(--warn)} .chip.moderate,.chip.severe{color:var(--crit)} .chip.unknown{color:var(--muted)}
+.scale{display:flex;flex-direction:column;gap:4px}
+.scale .bar{position:relative;display:grid;grid-template-columns:repeat(6,1fr);height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
+.scale .bar i{display:block}
+.scale .marker{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px var(--surface);transition:left .35s}
+.scale .ticks{display:grid;grid-template-columns:repeat(6,1fr);font-family:var(--font-data);font-size:.72rem;color:var(--muted)}
+.scale .ticks span{text-align:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.kv div{background:var(--sunk);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv b{font-family:var(--font-data);font-weight:500;font-size:1.05rem}
+.note{white-space:pre-wrap;font-family:var(--font-data);font-size:.8rem;background:var(--sunk);border-radius:8px;padding:12px;overflow-x:auto}
+.banner{border-radius:8px;padding:10px 12px;font-size:.9rem;border:1.5px dashed var(--warn);background:var(--warn-soft)}
+.banner.okb{border-color:var(--ok);background:var(--ok-soft);border-style:solid}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:700;font-size:.9rem;z-index:20}
+
+/* records */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk)}
+td.num,th.num{text-align:right}
+tr.ex td{color:var(--muted)}
+.tag{font-size:.7rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--muted)}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.metric{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.metric b{font-family:var(--font-data);font-weight:500;font-size:1.4rem}
+.chart svg{width:100%;height:auto;display:block}
+
+/* method */
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.prose ul,.prose ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.refs{font-size:.86rem}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="brand">
+      <h1>Omu<span>saayi</span></h1>
+      <p>On-device eyelid photo screening for anaemia in pregnant women and girls · OapAI Technologies</p>
+    </div>
+    <span class="proto">Research prototype · screening only, not a diagnosis</span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-screen" aria-selected="true" data-tab="screen">Screen</button>
+    <button role="tab" id="tab-calib" aria-selected="false" data-tab="calib">Calibrate</button>
+    <button role="tab" id="tab-records" aria-selected="false" data-tab="records">Records <span class="count" id="recCount">0</span></button>
+    <button role="tab" id="tab-method" aria-selected="false" data-tab="method">Method</button>
+  </nav>
+
+  <!-- SCREEN -->
+  <section id="screen" class="stack" role="tabpanel">
+    <div class="panel">
+      <div class="step"><b>1</b><h3>Who is being screened</h3></div>
+      <div class="fields">
+        <div class="field"><label for="code">Client code (no names)</label><input type="text" id="code" placeholder="e.g. KWP-0142" autocomplete="off"></div>
+        <div class="field"><label for="cat">Group</label>
+          <select id="cat"><option value="pregnant">Pregnant woman</option><option value="girl">Adolescent girl (10–19), not pregnant</option><option value="woman">Woman 20–49, not pregnant</option></select></div>
+        <div class="field"><label for="age">Age (years)</label><input type="number" id="age" min="10" max="49" value="24"></div>
+        <div class="field" id="triField"><label for="tri">Trimester</label>
+          <select id="tri"><option value="1">First</option><option value="2" selected>Second</option><option value="3">Third</option></select></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="step"><b>2</b><h3>Eyelid photo</h3></div>
+        <p class="hint">Gently pull the lower eyelid down and photograph the inner pink lining in daylight, without flash. Hold a plain white paper next to the eye so its colour can be corrected.</p>
+        <div class="btns">
+          <span class="btn primary file">Take or choose photo<input type="file" id="photo" accept="image/*" capture="environment" aria-label="Take or choose photo"></span>
+          <button class="btn" id="demoPale" type="button">Demo: pale lining</button>
+          <button class="btn" id="demoHealthy" type="button">Demo: healthy lining</button>
+        </div>
+        <div class="btns" role="group" aria-label="What a tap on the photo marks">
+          <button class="btn small on" id="modeLid" type="button" aria-pressed="true">Drag over eyelid lining</button>
+          <button class="btn small" id="modeWhite" type="button" aria-pressed="false">Tap the white paper</button>
+        </div>
+        <div class="stage"><canvas id="cv" width="900" height="600" aria-label="Eyelid photo; drag a box over the pink lining"></canvas></div>
+        <ul class="qc" id="qc"></ul>
+      </div>
+
+      <div class="panel" aria-live="polite">
+        <div class="step"><b>3</b><h3>Screening result</h3></div>
+        <div id="modelBanner"></div>
+        <div class="verdict unknown" id="verdict">
+          <span class="chip unknown" id="chip">Waiting for photo</span>
+          <div class="big" id="hbOut">—</div>
+          <p id="action">Load a photo and mark the eyelid lining.</p>
+        </div>
+        <div class="scale" aria-hidden="true">
+          <div class="bar" id="hcsBar"><i style="background:#F3D9D5"></i><i style="background:#EDB9B2"></i><i style="background:#E2958C"></i><i style="background:#D06D66"></i><i style="background:#B44849"></i><i style="background:#8E2433"></i><div class="marker" id="hcsMarker" hidden></div></div>
+          <div class="ticks"><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14 g/dL</span></div>
+        </div>
+        <div class="kv" id="feat"></div>
+        <details>
+          <summary class="label" style="cursor:pointer">Referral note</summary>
+          <div class="stack" style="gap:8px;margin-top:8px">
+            <pre class="note" id="refNote">No result yet.</pre>
+            <div class="btns"><button class="btn small" id="copyNote" type="button">Copy referral note</button></div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="step"><b>4</b><h3>Add to the calibration set</h3></div>
+      <p class="hint">Every reading paired with a HemoCue or lab haemoglobin makes the model better for Ugandan women. Only colour numbers are saved on this phone. The photo is never stored or sent anywhere.</p>
+      <div class="fields">
+        <div class="field"><label for="labHb">HemoCue / lab Hb (g/dL)</label><input type="number" id="labHb" step="0.1" min="3" max="20" placeholder="e.g. 10.4"></div>
+        <div class="field"><label for="site">Site</label><input type="text" id="site" placeholder="e.g. Kawempe NRH ANC" autocomplete="off"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="consent"><span>The client (and a parent or guardian for girls under 18) gave informed consent for this anonymous reading to be kept for research.</span></label>
+      <div class="btns"><button class="btn primary" id="saveRec" type="button" disabled>Save reading</button></div>
+    </div>
+  </section>
+
+  <!-- CALIBRATE -->
+  <section id="calib" class="stack" role="tabpanel" hidden>
+    <div class="panel">
+      <h2>Calibration model</h2>
+      <p class="muted">The screener learns a mapping from eyelid colour to haemoglobin using readings you pair with a HemoCue result. It needs at least 15 real pairs. Until then it runs on simulated example data so you can see how it works.</p>
+      <div id="calibBanner"></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="chart" id="chart"></div>
+      <p class="hint">Each dot is one reading: the measured Hb against the Hb the model predicted without seeing that reading (leave-one-out). Dots near the diagonal are good. The shaded box marks readings that were anaemic by blood test but missed by the screen.</p>
+    </div>
+    <div class="panel">
+      <h3>Model details</h3>
+      <div id="coef" class="note"></div>
+    </div>
+  </section>
+
+  <!-- RECORDS -->
+  <section id="records" class="stack" role="tabpanel" hidden>
+    <div class="panel">
+      <h2>Saved readings</h2>
+      <p class="muted">Readings stay on this device. Export them as CSV to combine data from several phones, or import a CSV another team member exported.</p>
+      <div class="btns">
+        <button class="btn" id="copyCsv" type="button">Copy CSV</button>
+        <button class="btn" id="dlCsv" type="button" hidden>Download CSV</button>
+        <button class="btn" id="clearEx" type="button">Remove example data</button>
+      </div>
+      <div class="tablewrap"><table id="recTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Import readings</h3>
+      <p class="hint">Paste a CSV exported from Omusaayi on another phone.</p>
+      <textarea id="importBox" aria-label="CSV to import" placeholder="id,timestamp,code,group,age,trimester,site,ei,red_fraction,a_star,mean_r,mean_g,mean_b,white_ref,lab_hb,example"></textarea>
+      <div class="btns"><button class="btn" id="doImport" type="button">Import</button></div>
+      <textarea id="csvOut" aria-label="CSV export" hidden readonly></textarea>
+    </div>
+  </section>
+
+  <!-- METHOD -->
+  <section id="method" class="stack" role="tabpanel" hidden>
+    <div class="panel prose">
+      <h2>How Omusaayi works</h2>
+      <p><em>Omusaayi</em> means blood in Luganda. The inner lining of the lower eyelid (palpebral conjunctiva) is rich in blood vessels and carries no skin pigment, so its redness tracks haemoglobin in women of every skin tone. Health workers already check it by eye for pallor. Omusaayi measures that colour with a phone camera instead.</p>
+      <ol>
+        <li><strong>Colour correction.</strong> A white paper in the photo sets the white balance, which cancels most of the difference between phones and lighting.</li>
+        <li><strong>Feature extraction.</strong> Inside the marked lining, the app drops glare and shadow pixels, then computes the erythema index (100 × log₁₀ R/G), the share of strongly red pixels, and CIELAB redness (a*).</li>
+        <li><strong>Calibrated estimate.</strong> A ridge regression, refit on this device from HemoCue-paired readings, turns those three numbers into an Hb estimate with an error range taken from leave-one-out testing.</li>
+        <li><strong>Action.</strong> The estimate is graded against WHO cut-offs for the person's group, and the app suggests a next step and writes a referral note.</li>
+      </ol>
+      <h3>WHO haemoglobin cut-offs used (g/dL)</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Group</th><th class="num">Anaemia below</th><th class="num">Mild</th><th class="num">Moderate</th><th class="num">Severe below</th></tr>
+        <tr><td>Pregnant women</td><td class="num">11.0</td><td class="num">10.0–10.9</td><td class="num">7.0–9.9</td><td class="num">7.0</td></tr>
+        <tr><td>Non-pregnant women and girls 12+</td><td class="num">12.0</td><td class="num">11.0–11.9</td><td class="num">8.0–10.9</td><td class="num">8.0</td></tr>
+        <tr><td>Girls 10–11</td><td class="num">11.5</td><td class="num">11.0–11.4</td><td class="num">8.0–10.9</td><td class="num">8.0</td></tr>
+      </table></div>
+      <h3>Safety by design</h3>
+      <ul>
+        <li>All image processing happens in the browser. Photos are never uploaded or saved.</li>
+        <li>Saved readings hold colour numbers, a client code and a lab Hb. No names and no images.</li>
+        <li>Nothing is saved without a recorded consent tick.</li>
+        <li>Every result is labelled as a screen. Borderline and positive results always point to a blood test.</li>
+      </ul>
+      <h3>Why Uganda needs it</h3>
+      <ul>
+        <li>Pooled data from 17 Ugandan studies (14,410 pregnant women) put anaemia in pregnancy at about 30%.</li>
+        <li>Facility assessments found gaps in haemoglobin testing, especially point-of-care testing, in Ugandan antenatal care.</li>
+        <li>In Kamuli district, haemoglobin was among the least-done antenatal tests, held back by stock-outs of kits and reagents.</li>
+        <li>Adolescent girls are largely missing from national anaemia surveys, even though school studies find high rates.</li>
+      </ul>
+      <h3>Limits</h3>
+      <p>Phone-based Hb estimates are less precise than a blood test and are best at catching moderate and severe anaemia. The example model in this prototype is trained on simulated numbers and must not be used on real clients. A Ugandan validation study against HemoCue is the next step.</p>
+      <h3>Open source</h3>
+      <p>Omusaayi is released by OapAI Technologies under the Apache 2.0 licence, in partnership plans with the Department of Computer Science, Makerere University.</p>
+      <div class="refs muted">
+        <p><strong>Key references.</strong> Collings et al., PLOS ONE 2016 (conjunctiva photos and erythema index). Mannino et al., Nature Communications 2018 (smartphone Hb from fingernail photos). Jay et al., PLOS ONE 2024 (real-time conjunctival app). Tancred et al., PLOS Global Public Health 2024 (anaemia care readiness in Ghana and Uganda). Anaemia in Ugandan pregnant women: cross-sectional study and meta-analysis, Tropical Medicine and Health 2021.</p>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const KEY="omusaayi.v1";
+const FEATS=["ei","red_fraction","a_star"];
+
+/* ---------- storage ---------- */
+function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+
+/* ---------- simulated example data ---------- */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+/* Simulated lining colour for a given Hb: paler and less red as Hb falls. Illustrative only. */
+function hbColour(hb){const t=Math.max(0,Math.min(1,(hb-6)/8.5));return[217-36*t,142-64*t,144-58*t]}
+function features(pixels){let R=0,G=0,B=0,red=0;
+  pixels.forEach(([r,g,b])=>{R+=r;G+=g;B+=b;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;if(mx===r&&s>.48&&(g-b)/(mx-mn||1)<.35)red++});
+  const n=pixels.length;R/=n;G/=n;B/=n;return{ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:lab(R,G,B).a,mean_r:R,mean_g:G,mean_b:B}}
+function examples(){
+  const r=rng(42),out=[],groups=["pregnant","pregnant","pregnant","girl","woman"];
+  for(let i=0;i<36;i++){
+    const hb=+(6.2+r()*8.4).toFixed(1);
+    const c=hbColour(hb+gauss(r)*1.1).map(v=>v+gauss(r)*4);
+    const px=[];for(let k=0;k<300;k++){const j=gauss(r)*9;px.push([c[0]+j+gauss(r)*4,c[1]+j+gauss(r)*4,c[2]+j+gauss(r)*4])}
+    const f=features(px),g=groups[i%groups.length];
+    out.push({id:"ex"+i,timestamp:new Date(Date.UTC(2026,8,1+i%28,8+i%9)).toISOString(),code:"SIM-"+String(i+1).padStart(3,"0"),group:g,age:g==="girl"?13+i%7:20+i%20,trimester:g==="pregnant"?1+i%3:"",site:"Simulated",
+      ei:+f.ei.toFixed(3),red_fraction:+f.red_fraction.toFixed(4),a_star:+f.a_star.toFixed(3),mean_r:+f.mean_r.toFixed(1),mean_g:+f.mean_g.toFixed(1),mean_b:+f.mean_b.toFixed(1),white_ref:1,lab_hb:hb,example:1});
+  }
+  return out;
+}
+let state=load()||{records:examples()};
+if(!Array.isArray(state.records))state={records:examples()};
+
+/* ---------- WHO cut-offs ---------- */
+function cuts(group,age){
+  if(group==="pregnant")return{cut:11,mod:10,sev:7};
+  if(group==="girl"&&+age<12)return{cut:11.5,mod:11,sev:8};
+  return{cut:12,mod:11,sev:8};
+}
+function band(hb,c){if(hb<c.sev)return"severe";if(hb<c.mod)return"moderate";if(hb<c.cut)return"mild";return"none"}
+
+/* ---------- regression ---------- */
+function solve(A,b){const n=b.length;A=A.map(r=>r.slice());b=b.slice();
+  for(let i=0;i<n;i++){let p=i;for(let k=i+1;k<n;k++)if(Math.abs(A[k][i])>Math.abs(A[p][i]))p=k;
+    [A[i],A[p]]=[A[p],A[i]];[b[i],b[p]]=[b[p],b[i]];const d=A[i][i]||1e-12;
+    for(let k=i+1;k<n;k++){const f=A[k][i]/d;for(let j=i;j<n;j++)A[k][j]-=f*A[i][j];b[k]-=f*b[i]}}
+  const x=new Array(n).fill(0);for(let i=n-1;i>=0;i--){let s=b[i];for(let j=i+1;j<n;j++)s-=A[i][j]*x[j];x[i]=s/(A[i][i]||1e-12)}return x}
+function fit(rows,lambda){
+  lambda=lambda??0.5;const p=FEATS.length,n=rows.length;
+  const mu=FEATS.map(f=>rows.reduce((s,r)=>s+r[f],0)/n);
+  const sd=FEATS.map((f,j)=>Math.sqrt(rows.reduce((s,r)=>s+(r[f]-mu[j])**2,0)/n)||1);
+  const X=rows.map(r=>[1,...FEATS.map((f,j)=>(r[f]-mu[j])/sd[j])]),y=rows.map(r=>r.lab_hb);
+  const A=Array.from({length:p+1},(_,i)=>Array.from({length:p+1},(_,j)=>X.reduce((s,x)=>s+x[i]*x[j],0)+(i===j&&i>0?lambda:0)));
+  const b=Array.from({length:p+1},(_,i)=>X.reduce((s,x,k)=>s+x[i]*y[k],0));
+  return{mu,sd,w:solve(A,b)};
+}
+function predict(m,r){return m.w[0]+FEATS.reduce((s,f,j)=>s+m.w[j+1]*(r[f]-m.mu[j])/m.sd[j],0)}
+
+let model=null;
+function buildModel(){
+  const paired=state.records.filter(r=>isFinite(r.lab_hb)&&r.lab_hb!==""&&FEATS.every(f=>isFinite(r[f])&&r[f]!==""));
+  const real=paired.filter(r=>!+r.example);
+  const useReal=real.length>=15;
+  const rows=(useReal?real:paired.filter(r=>+r.example)).map(r=>({...r,lab_hb:+r.lab_hb,ei:+r.ei,red_fraction:+r.red_fraction,a_star:+r.a_star}));
+  if(rows.length<8){model=null;return}
+  const m=fit(rows);
+  const loo=rows.map((r,i)=>{const mm=fit(rows.filter((_,k)=>k!==i));return{y:r.lab_hb,p:predict(mm,r),c:cuts(r.group,r.age)}});
+  const err=loo.map(o=>o.p-o.y),n=loo.length;
+  const mae=err.reduce((s,e)=>s+Math.abs(e),0)/n,rmse=Math.sqrt(err.reduce((s,e)=>s+e*e,0)/n);
+  const ym=loo.reduce((s,o)=>s+o.y,0)/n,ss=loo.reduce((s,o)=>s+(o.y-ym)**2,0);
+  const r2=1-err.reduce((s,e)=>s+e*e,0)/ss;
+  let tp=0,fn=0,tn=0,fp=0;loo.forEach(o=>{const a=o.y<o.c.cut,s=o.p<o.c.cut;if(a&&s)tp++;else if(a)fn++;else if(s)fp++;else tn++});
+  model={m,loo,mae,rmse,r2,sens:tp/(tp+fn||1),spec:tn/(tn+fp||1),n,real:useReal,realCount:real.length,tp,fn,tn,fp};
+}
+
+/* ---------- image handling ---------- */
+const cv=$("#cv"),cx=cv.getContext("2d",{willReadFrequently:true});
+let img=null,roi=null,white=null,mode="lid",drag=null,feat=null,demo=false;
+const off=document.createElement("canvas"),ox=off.getContext("2d",{willReadFrequently:true});
+
+function setImage(source,w,h){
+  const s=Math.min(1,1200/Math.max(w,h));off.width=Math.round(w*s);off.height=Math.round(h*s);
+  ox.drawImage(source,0,0,off.width,off.height);cv.width=off.width;cv.height=off.height;img=true;
+}
+function draw(){
+  if(!img){cx.fillStyle=getComputedStyle(document.body).getPropertyValue("--sunk");cx.fillRect(0,0,cv.width,cv.height);return}
+  cx.drawImage(off,0,0);
+  const lw=Math.max(2,cv.width/300);
+  if(roi){cx.save();cx.lineWidth=lw;cx.strokeStyle="#FFFFFF";cx.setLineDash([lw*4,lw*3]);cx.strokeRect(roi.x,roi.y,roi.w,roi.h);
+    cx.strokeStyle="#9B1D35";cx.lineDashOffset=lw*3.5;cx.strokeRect(roi.x,roi.y,roi.w,roi.h);cx.restore()}
+  if(white){cx.save();cx.lineWidth=lw;cx.strokeStyle="#111";cx.beginPath();cx.arc(white.x,white.y,lw*7,0,7);cx.stroke();
+    cx.strokeStyle="#FFF";cx.beginPath();cx.arc(white.x,white.y,lw*5,0,7);cx.stroke();cx.restore()}
+}
+function pt(e){const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height}}
+cv.addEventListener("pointerdown",e=>{if(!img)return;const p=pt(e);
+  if(mode==="white"){white=sampleWhite(p);draw();analyse();return}
+  drag=p;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(!drag)return;const p=pt(e);
+  roi={x:Math.min(drag.x,p.x),y:Math.min(drag.y,p.y),w:Math.abs(p.x-drag.x),h:Math.abs(p.y-drag.y)};draw()});
+cv.addEventListener("pointerup",()=>{if(!drag)return;drag=null;if(roi&&roi.w*roi.h<50)roi=null;draw();analyse()});
+
+function sampleWhite(p){const r=Math.max(4,Math.round(cv.width/150)),x=Math.max(0,Math.round(p.x-r)),y=Math.max(0,Math.round(p.y-r));
+  const d=ox.getImageData(x,y,r*2,r*2).data;let R=0,G=0,B=0,n=0;for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++}
+  return{x:p.x,y:p.y,r:R/n,g:G/n,b:B/n}}
+
+function lab(r,g,b){const f=c=>{c/=255;return c>.04045?((c+.055)/1.055)**2.4:c/12.92};
+  const R=f(r),G=f(g),B=f(b);let X=(R*.4124+G*.3576+B*.1805)/.95047,Y=R*.2126+G*.7152+B*.0722,Z=(R*.0193+G*.1192+B*.9505)/1.08883;
+  const h=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;return{L:116*h(Y)-16,a:500*(h(X)-h(Y)),b:200*(h(Y)-h(Z))}}
+
+function analyse(){
+  const qc=[];feat=null;
+  if(!img){render(qc);return}
+  if(!roi){qc.push(["warn","Drag a box over the pink eyelid lining."]);render(qc);return}
+  const x=Math.round(roi.x),y=Math.round(roi.y),w=Math.max(1,Math.round(roi.w)),h=Math.max(1,Math.round(roi.h));
+  const d=ox.getImageData(x,y,w,h).data;
+  const wr=white?{r:Math.max(white.r,1),g:Math.max(white.g,1),b:Math.max(white.b,1)}:null;
+  let R=0,G=0,B=0,n=0,spec=0,dark=0,red=0,tot=0;
+  for(let i=0;i<d.length;i+=4){tot++;let r=d[i],g=d[i+1],b=d[i+2];
+    if(r>245&&g>245&&b>245){spec++;continue}if(r+g+b<60){dark++;continue}
+    if(wr){r=Math.min(255,r*245/wr.r);g=Math.min(255,g*245/wr.g);b=Math.min(255,b*245/wr.b)}
+    R+=r;G+=g;B+=b;n++;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;
+    if(mx===r&&s>.48&&(g-b)/(mx-mn||1)<.35)red++}
+  const area=w*h;
+  if(area<1500)qc.push(["bad","Box is too small. Cover more of the lining."]);else qc.push(["ok","Box size is fine."]);
+  if(spec/tot>.2)qc.push(["bad","Too much glare. Retake without flash or out of direct sun."]);
+  else if(spec/tot>.05)qc.push(["warn","Some glare inside the box. Shrink the box to avoid shiny spots."]);
+  if(dark/tot>.25)qc.push(["bad","Too much shadow. Retake in better light."]);
+  if(!n){render(qc);return}
+  R/=n;G/=n;B/=n;
+  const bright=(R+G+B)/3;
+  if(bright<60)qc.push(["bad","Lining is too dark to read."]);
+  if(!white)qc.push(["warn","No white reference. Tap the white paper for colour correction."]);
+  else{const m=(white.r+white.g+white.b)/3,dev=Math.max(Math.abs(white.r-m),Math.abs(white.g-m),Math.abs(white.b-m))/m;
+    if(m<120)qc.push(["warn","White paper looks grey. Use brighter light."]);
+    else if(dev>.18)qc.push(["warn","Strong colour cast in the light. Correction applied, but daylight is better."]);
+    else qc.push(["ok","White reference set."]);}
+  const L=lab(R,G,B);
+  feat={ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:L.a,mean_r:R,mean_g:G,mean_b:B,white_ref:white?1:0,
+        usable:!qc.some(q=>q[0]==="bad")};
+  render(qc);
+}
+
+/* ---------- result rendering ---------- */
+const ACT={
+  none:"No anaemia flag. Continue routine Hb testing at antenatal visits.",
+  mild:"Possible mild anaemia. Confirm with a blood Hb test at the next visit, and counsel on iron-folic acid adherence and iron-rich local foods such as beans, dark green leaves and small fish.",
+  moderate:"Possible moderate anaemia. Refer for a blood Hb test within days and manage per Ministry of Health guidelines.",
+  severe:"Possible severe anaemia. Refer today to the nearest HC IV or hospital for urgent assessment.",
+  border:"Result is close to the anaemia cut-off. Confirm with a blood Hb test before deciding."
+};
+const LABEL={none:"No flag",mild:"Possible mild",moderate:"Possible moderate",severe:"Possible severe",unknown:"No estimate"};
+function render(qc){
+  $("#qc").innerHTML=qc.map(q=>`<li><span class="dot ${q[0]}"></span><span>${q[1]}</span></li>`).join("");
+  const v=$("#verdict"),chip=$("#chip"),out=$("#hbOut"),act=$("#action"),mk=$("#hcsMarker");
+  $("#modelBanner").innerHTML=model&&!model.real?`<div class="banner">Example model trained on <strong>simulated</strong> data. Results show how the tool works and must not be used on real clients.</div>`:"";
+  const set=(cls,lbl,big,text)=>{v.className="verdict "+cls;chip.className="chip "+cls;chip.textContent=lbl;out.innerHTML=big;act.textContent=text};
+  $("#feat").innerHTML=feat?[["Erythema index",feat.ei.toFixed(1)],["Red pixel share",(feat.red_fraction*100).toFixed(0)+"%"],["CIELAB a*",feat.a_star.toFixed(1)],["Mean RGB",`${Math.round(feat.mean_r)}·${Math.round(feat.mean_g)}·${Math.round(feat.mean_b)}`]].map(k=>`<div><span class="label">${k[0]}</span><b>${k[1]}</b></div>`).join(""):"";
+  updateSave();
+  if(!feat){set("unknown",img?"Mark the lining":"Waiting for photo","—",img?"Drag a box over the pink inner eyelid.":"Load a photo and mark the eyelid lining.");mk.hidden=true;note(null);return}
+  if(!feat.usable){set("unknown","Retake photo","—","Fix the photo problems listed under the image, then try again.");mk.hidden=true;note(null);return}
+  if(!model){set("unknown","Not calibrated","—","Save at least 15 readings paired with a HemoCue result to switch on Hb estimates.");mk.hidden=true;note(null);return}
+  const c=cuts($("#cat").value,$("#age").value);
+  const hb=Math.max(3,Math.min(18,predict(model.m,feat)));
+  let b=band(hb,c);const border=Math.abs(hb-c.cut)<model.mae;
+  set(b,LABEL[b],`${hb.toFixed(1)} <small>± ${model.mae.toFixed(1)} g/dL estimated</small>`,border&&b!=="severe"?ACT.border:ACT[b]);
+  mk.hidden=false;mk.style.left=`calc(${Math.max(0,Math.min(1,(hb-3)/12))*100}% - 1.5px)`;
+  note({hb,b,c,border});
+}
+function note(r){
+  if(!r){$("#refNote").textContent="No result yet.";return}
+  const g={pregnant:`Pregnant, trimester ${$("#tri").value}`,girl:"Adolescent girl, not pregnant",woman:"Woman, not pregnant"}[$("#cat").value];
+  $("#refNote").textContent=
+`OMUSAAYI ANAEMIA SCREEN: REFERRAL NOTE
+Date: ${new Date().toLocaleDateString("en-GB")}
+Client code: ${$("#code").value||"(not entered)"}
+Group: ${g}, age ${$("#age").value}
+Screen result: estimated Hb ${r.hb.toFixed(1)} g/dL (± ${model.mae.toFixed(1)})
+Flag: ${LABEL[r.b]}${r.border?" (borderline)":""} anaemia, WHO cut-off ${r.c.cut.toFixed(1)} g/dL
+Requested: confirm with HemoCue or full blood count
+${model.real?"":"NOTE: example model on simulated data, not valid for clinical use\n"}This is a screening result, not a diagnosis.`;
+}
+
+/* ---------- demo images ---------- */
+function demoImage(kind){
+  const c=document.createElement("canvas");c.width=900;c.height=600;const g=c.getContext("2d");
+  const r=rng(kind==="pale"?7:9);
+  let sk=g.createRadialGradient(450,260,40,450,300,520);sk.addColorStop(0,"#6B4430");sk.addColorStop(1,"#3B2418");g.fillStyle=sk;g.fillRect(0,0,900,600);
+  g.fillStyle="#F4F2EE";g.beginPath();g.ellipse(430,230,250,95,0,0,7);g.fill();
+  g.fillStyle="#3A2A1E";g.beginPath();g.arc(430,230,78,0,7);g.fill();g.fillStyle="#0E0B09";g.beginPath();g.arc(430,230,34,0,7);g.fill();
+  g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(455,205,13,0,7);g.fill();
+  const base=hbColour(kind==="pale"?8.3:14).map(Math.round);
+  let lg=g.createLinearGradient(0,320,0,430);
+  lg.addColorStop(0,`rgb(${base[0]+14},${base[1]+18},${base[2]+18})`);lg.addColorStop(1,`rgb(${base[0]-16},${base[1]-14},${base[2]-12})`);
+  g.fillStyle=lg;g.beginPath();g.moveTo(190,325);g.quadraticCurveTo(430,300,670,325);g.quadraticCurveTo(440,470,190,325);g.fill();
+  g.strokeStyle=`rgba(${base[0]-60},${base[1]-50},${base[2]-45},.55)`;g.lineWidth=2;
+  for(let i=0;i<14;i++){g.beginPath();let x=230+r()*400,y=335+r()*40;g.moveTo(x,y);for(let k=0;k<4;k++){x+=(r()-.5)*60;y+=r()*18;g.lineTo(x,y)}g.stroke()}
+  g.fillStyle="#2A1810";g.beginPath();g.moveTo(170,330);g.quadraticCurveTo(440,500,690,330);g.quadraticCurveTo(440,560,170,330);g.fill();
+  g.save();g.translate(720,430);g.rotate(-.12);g.fillStyle="#F7F6F2";g.fillRect(0,0,150,120);g.restore();
+  const id=g.getImageData(0,0,900,600),d=id.data;for(let i=0;i<d.length;i+=4){const n=(r()-.5)*10;d[i]+=n;d[i+1]+=n;d[i+2]+=n}g.putImageData(id,0,0);
+  setImage(c,900,600);
+  roi={x:300,y:340,w:250,h:38};
+  white=sampleWhite({x:790,y:480});
+  demo=true;draw();analyse();
+}
+
+/* ---------- photo input ---------- */
+$("#photo").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
+  const url=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{setImage(im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(url);roi=null;white=null;demo=false;setMode("lid");draw();analyse();toast("Photo loaded. Drag over the eyelid lining.")};
+  im.onerror=()=>toast("That file could not be opened as an image. Try a JPG or PNG.");
+  im.src=url;e.target.value=""});
+$("#demoPale").addEventListener("click",()=>demoImage("pale"));
+$("#demoHealthy").addEventListener("click",()=>demoImage("healthy"));
+function setMode(m){mode=m;$("#modeLid").classList.toggle("on",m==="lid");$("#modeWhite").classList.toggle("on",m==="white");
+  $("#modeLid").setAttribute("aria-pressed",m==="lid");$("#modeWhite").setAttribute("aria-pressed",m==="white")}
+$("#modeLid").addEventListener("click",()=>setMode("lid"));
+$("#modeWhite").addEventListener("click",()=>setMode("white"));
+
+/* ---------- client fields ---------- */
+function syncFields(){const cat=$("#cat").value;$("#triField").hidden=cat!=="pregnant";
+  const a=$("#age");if(cat==="girl"){a.min=10;a.max=19;if(+a.value>19||+a.value<10)a.value=15}else{a.min=cat==="woman"?20:12;a.max=49}
+  analyse()}
+["#cat","#age","#tri"].forEach(s=>$(s).addEventListener("change",syncFields));
+$("#code").addEventListener("input",()=>feat&&render(qcNow()));
+function qcNow(){return[...document.querySelectorAll("#qc li")].map(li=>[li.firstChild.className.replace("dot ",""),li.lastChild.textContent])}
+
+/* ---------- saving ---------- */
+function updateSave(){$("#saveRec").disabled=!(feat&&feat.usable&&$("#consent").checked)}
+$("#consent").addEventListener("change",updateSave);
+$("#saveRec").addEventListener("click",()=>{
+  if(!feat)return;const lh=$("#labHb").value;
+  const cat=$("#cat").value;
+  state.records.push({id:"r"+Date.now().toString(36),timestamp:new Date().toISOString(),code:$("#code").value.trim(),group:cat,age:+$("#age").value,
+    trimester:cat==="pregnant"?+$("#tri").value:"",site:$("#site").value.trim(),
+    ei:+feat.ei.toFixed(3),red_fraction:+feat.red_fraction.toFixed(4),a_star:+feat.a_star.toFixed(3),
+    mean_r:+feat.mean_r.toFixed(1),mean_g:+feat.mean_g.toFixed(1),mean_b:+feat.mean_b.toFixed(1),white_ref:feat.white_ref,
+    lab_hb:lh===""?"":+(+lh).toFixed(1),example:demo?1:0});
+  persist();buildModel();refreshAll();
+  $("#labHb").value="";$("#consent").checked=false;updateSave();
+  toast(demo?"Saved as an example reading (demo photo).":lh===""?"Reading saved without a lab Hb.":"Paired reading saved.");
+});
+
+/* ---------- CSV ---------- */
+const COLS=["id","timestamp","code","group","age","trimester","site","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb","example"];
+function esc(v){v=v==null?"":String(v);return/[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
+function toCsv(){return[COLS.join(","),...state.records.map(r=>COLS.map(c=>esc(r[c])).join(","))].join("\n")}
+function parseCsv(t){const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch==='"'){if(t[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}
+    else if(ch==='"')q=true;else if(ch===","){row.push(cell);cell=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}else cell+=ch}
+  if(cell||row.length){row.push(cell);rows.push(row)}return rows.filter(r=>r.some(c=>c.trim()!==""))}
+async function copy(text,ok){try{await navigator.clipboard.writeText(text);toast(ok)}catch(e){const t=$("#csvOut");t.hidden=false;t.value=text;t.focus();t.select();toast("Copy blocked here. The text is selected below; copy it manually.")}}
+$("#copyCsv").addEventListener("click",()=>copy(toCsv(),`Copied ${state.records.length} readings as CSV.`));
+$("#copyNote").addEventListener("click",()=>copy($("#refNote").textContent,"Referral note copied."));
+const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+if(!framed){$("#dlCsv").hidden=false;$("#dlCsv").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([toCsv()],{type:"text/csv"}));a.download=`omusaayi-readings-${new Date().toISOString().slice(0,10)}.csv`;a.click()})}
+$("#doImport").addEventListener("click",()=>{
+  const rows=parseCsv($("#importBox").value.trim());if(rows.length<2){toast("Paste a CSV with a header row and at least one reading.");return}
+  const h=rows[0].map(s=>s.trim());if(!["ei","red_fraction","a_star"].every(c=>h.includes(c))){toast("That CSV is missing the ei, red_fraction or a_star columns.");return}
+  const have=new Set(state.records.map(r=>r.id));let added=0;
+  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]??"");
+    ["age","trimester","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb","example"].forEach(k=>{if(o[k]!==""&&o[k]!=null&&isFinite(o[k]))o[k]=+o[k]});
+    if(!o.id)o.id="i"+Math.random().toString(36).slice(2,9);if(have.has(o.id))return;have.add(o.id);state.records.push(o);added++});
+  persist();buildModel();refreshAll();$("#importBox").value="";toast(`Imported ${added} new reading${added===1?"":"s"}.`)});
+$("#clearEx").addEventListener("click",()=>{const n=state.records.filter(r=>+r.example).length;if(!n){toast("There is no example data left.");return}
+  state.records=state.records.filter(r=>!+r.example);persist();buildModel();refreshAll();toast(`Removed ${n} example readings.`)});
+
+/* ---------- records table ---------- */
+function renderTable(){
+  $("#recCount").textContent=state.records.length;
+  const t=$("#recTable");
+  if(!state.records.length){t.innerHTML=`<tr><td>No readings yet. Screen a client and tick consent to save the first one.</td></tr>`;return}
+  const gl={pregnant:"Pregnant",girl:"Girl",woman:"Woman"};
+  t.innerHTML=`<tr><th>Date</th><th>Code</th><th>Group</th><th class="num">Age</th><th>Site</th><th class="num">EI</th><th class="num">Red %</th><th class="num">a*</th><th class="num">Lab Hb</th><th></th></tr>`+
+    state.records.slice().reverse().map(r=>`<tr class="${+r.example?"ex":""}"><td class="num">${String(r.timestamp).slice(0,10)}</td><td>${esc2(r.code)} ${+r.example?'<span class="tag">example</span>':""}</td><td>${gl[r.group]||esc2(r.group)}</td><td class="num">${esc2(r.age)}</td><td>${esc2(r.site)}</td><td class="num">${fmt(r.ei,1)}</td><td class="num">${fmt(r.red_fraction*100,0)}</td><td class="num">${fmt(r.a_star,1)}</td><td class="num">${r.lab_hb===""?"—":fmt(r.lab_hb,1)}</td><td><button class="btn small" data-del="${esc2(r.id)}" type="button" aria-label="Delete reading ${esc2(r.code)}">Delete</button></td></tr>`).join("");
+}
+function fmt(v,d){return v===""||v==null||!isFinite(v)?"—":(+v).toFixed(d)}
+function esc2(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+$("#recTable").addEventListener("click",e=>{const id=e.target.dataset&&e.target.dataset.del;if(!id)return;
+  const b=e.target;if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Confirm";setTimeout(()=>{b.dataset.armed="";b.textContent="Delete"},3000);return}
+  state.records=state.records.filter(r=>r.id!==id);persist();buildModel();refreshAll();toast("Reading deleted.")});
+
+/* ---------- calibration view ---------- */
+function renderCalib(){
+  const cb=$("#calibBanner"),mt=$("#metrics"),ch=$("#chart"),co=$("#coef");
+  if(!model){cb.innerHTML=`<div class="banner">Not enough paired readings to fit a model. Save at least 15 readings with a HemoCue result.</div>`;mt.innerHTML="";ch.innerHTML="";co.textContent="No model.";return}
+  cb.innerHTML=model.real?`<div class="banner okb">Trained on <strong>${model.n}</strong> real HemoCue-paired readings from this device and imports.</div>`:
+    `<div class="banner">Running on <strong>${model.n} simulated</strong> example readings. ${model.realCount} of 15 real paired readings collected so far.</div>`;
+  const pc=v=>(v*100).toFixed(0)+"%";
+  mt.innerHTML=[["Readings",model.n],["Mean error",model.mae.toFixed(2)+" g/dL"],["R² (leave-one-out)",model.r2.toFixed(2)],["Sensitivity",pc(model.sens)],["Specificity",pc(model.spec)]]
+    .map(m=>`<div class="metric"><span class="label">${m[0]}</span><b>${m[1]}</b></div>`).join("");
+  const W=640,H=420,L=56,R=16,T=16,B=48,lo=5,hi=16;
+  const sx=v=>L+(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(W-L-R),sy=v=>H-B-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Measured versus predicted haemoglobin">`;
+  s+=`<rect x="${L}" y="${sy(11)}" width="${sx(11)-L}" height="${H-B-sy(11)}" fill="var(--crit-soft)"/>`;
+  for(let v=lo;v<=hi;v++){s+=`<line x1="${L}" x2="${W-R}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/><line y1="${T}" y2="${H-B}" x1="${sx(v)}" x2="${sx(v)}" stroke="var(--line)" stroke-width="1"/>`;
+    if(v%2===0||v===hi){s+=`<text x="${sx(v)}" y="${H-B+18}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text><text x="${L-8}" y="${sy(v)+4}" text-anchor="end" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text>`}}
+  s+=`<line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="var(--muted)" stroke-dasharray="5 5" stroke-width="1.5"/>`;
+  s+=`<line x1="${sx(11)}" x2="${sx(11)}" y1="${T}" y2="${H-B}" stroke="var(--accent)" stroke-width="1.5"/><line x1="${L}" x2="${W-R}" y1="${sy(11)}" y2="${sy(11)}" stroke="var(--accent)" stroke-width="1.5"/>`;
+  s+=`<text x="${sx(11)+6}" y="${T+14}" font-size="12" fill="var(--accent)" font-family="Atkinson Hyperlegible,sans-serif">11 g/dL</text>`;
+  model.loo.forEach(o=>{s+=`<circle cx="${sx(o.y)}" cy="${sy(o.p)}" r="5" fill="var(--accent)" fill-opacity=".7" stroke="var(--surface)" stroke-width="1"/>`});
+  s+=`<text x="${(L+W-R)/2}" y="${H-10}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible,sans-serif">Measured Hb, HemoCue (g/dL)</text>`;
+  s+=`<text transform="translate(16 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible,sans-serif">Predicted Hb (g/dL)</text></svg>`;
+  ch.innerHTML=s;
+  const m=model.m;
+  co.textContent=`Ridge regression (λ = 0.5) on standardised features
+Hb = ${m.w[0].toFixed(3)}
+${FEATS.map((f,j)=>`   ${m.w[j+1]>=0?"+":"−"} ${Math.abs(m.w[j+1]).toFixed(3)} × (${f} − ${m.mu[j].toFixed(3)}) / ${m.sd[j].toFixed(3)}`).join("\n")}
+
+Leave-one-out: MAE ${model.mae.toFixed(2)} g/dL, RMSE ${model.rmse.toFixed(2)} g/dL
+Anaemia detection (group-specific WHO cut-off):
+   true positives ${model.tp}, missed ${model.fn}, true negatives ${model.tn}, false alarms ${model.fp}`;
+}
+
+/* ---------- misc ---------- */
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2800)}
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["screen","calib","records","method"].forEach(id=>$("#"+id).hidden=id!==b.dataset.tab);
+  try{localStorage.setItem(KEY+".tab",b.dataset.tab)}catch(e){}
+}));
+function refreshAll(){renderTable();renderCalib();analyse()}
+
+buildModel();
+syncFields();
+demoImage("pale");
+refreshAll();
+try{const t=localStorage.getItem(KEY+".tab");if(t&&t!=="screen")document.querySelector(`[data-tab="${t}"]`)?.click()}catch(e){}
+})();
+</script>
+</body>
+</html>
