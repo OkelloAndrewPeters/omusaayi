@@ -79,7 +79,7 @@ textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:ve
 .btn{appearance:none;font:700 .92rem var(--font-body);border-radius:8px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.btn.small{padding:6px 10px;font-size:.82rem}
+.btn.small{padding:8px 12px;font-size:.85rem;min-height:40px}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
 .file{position:relative;overflow:hidden}
@@ -181,10 +181,17 @@ tr.ex td{color:var(--muted)}
           <button class="btn" id="demoHealthy" type="button">Demo: healthy lining</button>
         </div>
         <div class="btns" role="group" aria-label="What a tap on the photo marks">
-          <button class="btn small on" id="modeLid" type="button" aria-pressed="true">Drag over eyelid lining</button>
-          <button class="btn small" id="modeWhite" type="button" aria-pressed="false">Tap the white paper</button>
+          <button class="btn small on" id="modeLid" type="button" aria-pressed="true">Place box on lining</button>
+          <button class="btn small" id="modeWhite" type="button" aria-pressed="false">Mark white paper</button>
         </div>
-        <div class="stage"><canvas id="cv" width="900" height="600" aria-label="Eyelid photo; drag a box over the pink lining"></canvas></div>
+        <p class="hint" id="modeHint">Tap the pink lining to move the box there. On a computer you can also drag to draw it.</p>
+        <div class="stage"><canvas id="cv" width="900" height="600" aria-label="Eyelid photo; tap the pink lining to place the measuring box"></canvas></div>
+        <div class="btns" role="group" aria-label="Box size" id="sizeBtns">
+          <button class="btn small" type="button" data-rs="0.8,0.8">Smaller</button>
+          <button class="btn small" type="button" data-rs="1.25,1.25">Larger</button>
+          <button class="btn small" type="button" data-rs="1,0.75">Thinner</button>
+          <button class="btn small" type="button" data-rs="1,1.33">Thicker</button>
+        </div>
         <ul class="qc" id="qc"></ul>
       </div>
 
@@ -399,12 +406,37 @@ function draw(){
     cx.strokeStyle="#FFF";cx.beginPath();cx.arc(white.x,white.y,lw*5,0,7);cx.stroke();cx.restore()}
 }
 function pt(e){const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height}}
-cv.addEventListener("pointerdown",e=>{if(!img)return;const p=pt(e);
-  if(mode==="white"){white=sampleWhite(p);draw();analyse();return}
-  drag=p;cv.setPointerCapture(e.pointerId)});
+let moved=false,prevRoi=null;
+cv.addEventListener("pointerdown",e=>{if(!img)return;e.preventDefault();const p=pt(e);
+  if(mode==="white"){white=sampleWhite(p);setMode("lid");draw();analyse();toast("White reference set.");return}
+  drag=p;moved=false;prevRoi=roi;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener("pointermove",e=>{if(!drag)return;const p=pt(e);
+  if(!moved&&Math.hypot(p.x-drag.x,p.y-drag.y)<cv.width/30)return;moved=true;
   roi={x:Math.min(drag.x,p.x),y:Math.min(drag.y,p.y),w:Math.abs(p.x-drag.x),h:Math.abs(p.y-drag.y)};draw()});
-cv.addEventListener("pointerup",()=>{if(!drag)return;drag=null;if(roi&&roi.w*roi.h<50)roi=null;draw();analyse()});
+cv.addEventListener("pointerup",()=>{if(!drag)return;
+  if(!moved)placeAt(drag);else if(!roi||roi.w*roi.h<200)roi=prevRoi;
+  drag=null;draw();analyse()});
+cv.addEventListener("pointercancel",()=>{if(!drag)return;drag=null;roi=prevRoi;draw()});
+function clampRoi(r){r.w=Math.max(12,Math.min(cv.width,r.w));r.h=Math.max(8,Math.min(cv.height,r.h));
+  r.x=Math.max(0,Math.min(cv.width-r.w,r.x));r.y=Math.max(0,Math.min(cv.height-r.h,r.y));return r}
+function placeAt(p){const w=roi?roi.w:cv.width*.26,h=roi?roi.h:cv.height*.07;roi=clampRoi({x:p.x-w/2,y:p.y-h/2,w,h})}
+document.getElementById("sizeBtns").addEventListener("click",e=>{const v=e.target.dataset&&e.target.dataset.rs;if(!v)return;
+  if(!roi){toast("Tap the pink lining first to place the box.");return}
+  const[fw,fh]=v.split(",").map(Number),cx0=roi.x+roi.w/2,cy0=roi.y+roi.h/2,w=roi.w*fw,h=roi.h*fh;
+  roi=clampRoi({x:cx0-w/2,y:cy0-h/2,w,h});draw();analyse()});
+/* Find the lining automatically: the window with the most pink-red pixels (red-dominant, saturated,
+   and with blue close to green, which rules out brown skin). */
+function autoFind(){
+  const W=off.width,H=off.height,s=Math.max(1,Math.floor(W/240)),w=Math.floor(W/s),h=Math.floor(H/s);
+  const d=ox.getImageData(0,0,W,H).data,I=new Float32Array((w+1)*(h+1));
+  for(let y=0;y<h;y++){let row=0;for(let x=0;x<w;x++){const i=((y*s)*W+x*s)*4,r=d[i],g=d[i+1],b=d[i+2];
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx?(mx-mn)/mx:0;
+    row+=(r===mx&&r>g*1.3&&b>g*.85&&sat>.25&&r>80)?1:0;I[(y+1)*(w+1)+x+1]=I[y*(w+1)+x+1]+row}}
+  const bw=Math.max(4,Math.round(w*.22)),bh=Math.max(3,Math.round(h*.06));let best=-1,bx=0,by=0;
+  for(let y=0;y+bh<=h;y++)for(let x=0;x+bw<=w;x++){
+    const v=I[(y+bh)*(w+1)+x+bw]-I[y*(w+1)+x+bw]-I[(y+bh)*(w+1)+x]+I[y*(w+1)+x];if(v>best){best=v;bx=x;by=y}}
+  if(best<bw*bh*.5)return false;
+  roi=clampRoi({x:bx*s,y:by*s,w:bw*s,h:bh*s});return true}
 
 function sampleWhite(p){const r=Math.max(4,Math.round(cv.width/150)),x=Math.max(0,Math.round(p.x-r)),y=Math.max(0,Math.round(p.y-r));
   const d=ox.getImageData(x,y,r*2,r*2).data;let R=0,G=0,B=0,n=0;for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++}
@@ -417,7 +449,7 @@ function lab(r,g,b){const f=c=>{c/=255;return c>.04045?((c+.055)/1.055)**2.4:c/1
 function analyse(){
   const qc=[];feat=null;
   if(!img){render(qc);return}
-  if(!roi){qc.push(["warn","Drag a box over the pink eyelid lining."]);render(qc);return}
+  if(!roi){qc.push(["warn","Tap the pink eyelid lining to place the box."]);render(qc);return}
   const x=Math.round(roi.x),y=Math.round(roi.y),w=Math.max(1,Math.round(roi.w)),h=Math.max(1,Math.round(roi.h));
   const d=ox.getImageData(x,y,w,h).data;
   const wr=white?{r:Math.max(white.r,1),g:Math.max(white.g,1),b:Math.max(white.b,1)}:null;
@@ -464,7 +496,7 @@ function render(qc){
   const set=(cls,lbl,big,text)=>{v.className="verdict "+cls;chip.className="chip "+cls;chip.textContent=lbl;out.innerHTML=big;act.textContent=text};
   $("#feat").innerHTML=feat?[["Erythema index",feat.ei.toFixed(1)],["Red pixel share",(feat.red_fraction*100).toFixed(0)+"%"],["CIELAB a*",feat.a_star.toFixed(1)],["Mean RGB",`${Math.round(feat.mean_r)}·${Math.round(feat.mean_g)}·${Math.round(feat.mean_b)}`]].map(k=>`<div><span class="label">${k[0]}</span><b>${k[1]}</b></div>`).join(""):"";
   updateSave();
-  if(!feat){set("unknown",img?"Mark the lining":"Waiting for photo","—",img?"Drag a box over the pink inner eyelid.":"Load a photo and mark the eyelid lining.");mk.hidden=true;note(null);return}
+  if(!feat){set("unknown",img?"Mark the lining":"Waiting for photo","—",img?"Tap the pink inner eyelid to place the box.":"Load a photo and mark the eyelid lining.");mk.hidden=true;note(null);return}
   if(!feat.usable){set("unknown","Retake photo","—","Fix the photo problems listed under the image, then try again.");mk.hidden=true;note(null);return}
   if(!model){set("unknown","Not calibrated","—","Save at least 15 readings paired with a HemoCue result to switch on Hb estimates.");mk.hidden=true;note(null);return}
   const c=cuts($("#cat").value,$("#age").value);
@@ -514,12 +546,14 @@ function demoImage(kind){
 /* ---------- photo input ---------- */
 $("#photo").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;
   const url=URL.createObjectURL(f),im=new Image();
-  im.onload=()=>{setImage(im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(url);roi=null;white=null;demo=false;setMode("lid");draw();analyse();toast("Photo loaded. Drag over the eyelid lining.")};
+  im.onload=()=>{setImage(im,im.naturalWidth,im.naturalHeight);URL.revokeObjectURL(url);roi=null;white=null;demo=false;
+    const found=autoFind();setMode(found?"white":"lid");draw();analyse();
+    toast(found?"Box placed on the lining. Check it, then tap the white paper.":"Tap the pink lining to place the box.")};
   im.onerror=()=>toast("That file could not be opened as an image. Try a JPG or PNG.");
   im.src=url;e.target.value=""});
 $("#demoPale").addEventListener("click",()=>demoImage("pale"));
 $("#demoHealthy").addEventListener("click",()=>demoImage("healthy"));
-function setMode(m){mode=m;$("#modeLid").classList.toggle("on",m==="lid");$("#modeWhite").classList.toggle("on",m==="white");
+function setMode(m){mode=m;$("#modeHint").textContent=m==="white"?"Tap the white paper once. To adjust the box first, press Place box on lining.":"Tap the pink lining to move the box there. On a computer you can also drag to draw it.";$("#modeLid").classList.toggle("on",m==="lid");$("#modeWhite").classList.toggle("on",m==="white");
   $("#modeLid").setAttribute("aria-pressed",m==="lid");$("#modeWhite").setAttribute("aria-pressed",m==="white")}
 $("#modeLid").addEventListener("click",()=>setMode("lid"));
 $("#modeWhite").addEventListener("click",()=>setMode("white"));
