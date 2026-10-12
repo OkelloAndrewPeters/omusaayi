@@ -26,6 +26,23 @@ A phone camera needs no reagents, so it can screen wherever a health worker is.
 3. **Calibrated estimate.** A ridge regression maps these features to Hb. It is refit on the device from readings paired with a HemoCue result, and its error range comes from leave-one-out validation.
 4. **Action.** The estimate is graded against WHO cut-offs for the client's group (pregnant, adolescent girl or non-pregnant woman). Borderline results are sent for a blood test.
 
+## Screening → referral → follow-up → intelligence
+
+- **Referral.** A positive or borderline screen creates a referral with a due date set by severity: severe today, moderate within 3 days, borderline within 7 days, mild within 14 days. The app also writes a referral note to hand the client.
+- **Follow-up worklist.** Clients appear in a due/overdue list. The health worker records:
+  - the confirmed blood Hb
+  - whether treatment started (iron-folic acid, or referral to a higher level)
+  - a repeat Hb after 4 weeks
+  - lost to follow-up, if the client cannot be reached
+
+  Every positive screen ends in a known outcome.
+- **Programme insights.** Aggregate indicators for facility in-charges, district health teams and the Ministry:
+  - the care cascade: screened → referred → confirmed → treated → repeat Hb → recovered
+  - referral completion, overdue and loss to follow-up, by facility
+  - screen-positive and confirmed rates by group (pregnant, adolescent girl, woman)
+  - monthly trends
+- **DHIS2 export.** Monthly aggregates per site and group in the DHIS2 data-value import layout.
+
 ## Safety by design
 
 - All image processing runs in the browser. Photos are never uploaded or stored.
@@ -44,8 +61,8 @@ python3 -m http.server 8000
 ## Roadmap
 
 - Validation study against HemoCue in Kampala and Wakiso (ethics approval pending)
-- Referral and follow-up tracking, with aggregate reports for facilities and districts
-- Export to DHIS2 / eCHIS
+- Direct DHIS2 / eCHIS integration (org-unit and data-element mapping)
+- Optional encrypted sync between team phones
 - Luganda and other local-language interfaces
 - Fingernail-bed images as a second signal
 

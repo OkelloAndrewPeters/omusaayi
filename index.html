@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#9B1D35">
 <title>Omusaayi Anaemia Screener</title>
-<meta name="description" content="Open-source, on-device smartphone anaemia screening for pregnant women and adolescent girls. Research prototype by OapAI Technologies.">
+<meta name="description" content="Open-source smartphone anaemia screening, referral and follow-up for pregnant women and adolescent girls. Research prototype by OapAI Technologies.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Young+Serif&display=swap">
 <style>
-/* Layout: a single-column field tool — sticky tab bar, then stacked work panels; the photo canvas and the result sit side by side on wide screens. */
+/* Layout: a single-column field tool. Sticky tab bar, then stacked work panels; photo and result sit side by side on wide screens. */
 :root{
   --bg:#EEF1F4; --surface:#FFFFFF; --sunk:#E4E8EC; --ink:#17202A; --muted:#56616D; --line:#D3D9DF;
-  --accent:#9B1D35; --accent-soft:#F6E3E7; --on-accent:#FFFFFF;
+  --accent:#9B1D35; --accent-mid:#D58A99; --accent-soft:#F6E3E7; --on-accent:#FFFFFF;
   --ok:#1C7356; --ok-soft:#DFF1EA; --warn:#9A5B00; --warn-soft:#FBEBD2; --crit:#B3261E; --crit-soft:#FADCD9;
   --font-display:"Young Serif", Georgia, "Times New Roman", serif;
   --font-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -22,12 +22,12 @@
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0E1318; --surface:#161E26; --sunk:#1D2731; --ink:#E5EAEF; --muted:#98A4B0; --line:#2A3642;
-  --accent:#E5607A; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
+  --accent:#E5607A; --accent-mid:#7E3445; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
   --ok:#4FC79F; --ok-soft:#14302A; --warn:#E6A640; --warn-soft:#33260F; --crit:#F27A70; --crit-soft:#3A1915;
   color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0E1318; --surface:#161E26; --sunk:#1D2731; --ink:#E5EAEF; --muted:#98A4B0; --line:#2A3642;
-  --accent:#E5607A; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
+  --accent:#E5607A; --accent-mid:#7E3445; --accent-soft:#3A1A22; --on-accent:#1A0A0E;
   --ok:#4FC79F; --ok-soft:#14302A; --warn:#E6A640; --warn-soft:#33260F; --crit:#F27A70; --crit-soft:#3A1915;
   color-scheme:dark }
 
@@ -40,12 +40,11 @@ h2{font-family:var(--font-display);font-weight:400;font-size:1.45rem}
 h3{font-size:1rem;font-weight:700}
 p{margin:0}
 .muted{color:var(--muted)}
-.mono,.num{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.num{font-family:var(--font-data);font-variant-numeric:tabular-nums}
 .label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
 a{color:var(--accent)}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-/* masthead */
 .mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:24px 16px}
 .brand{display:flex;flex-direction:column;gap:2px}
 .brand h1{font-family:var(--font-display);font-weight:400;font-size:clamp(1.8rem,5vw,2.4rem);letter-spacing:-.01em}
@@ -53,39 +52,38 @@ a{color:var(--accent)}
 .brand p{color:var(--muted);font-size:.95rem}
 .proto{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--warn);color:var(--warn);background:var(--warn-soft);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:700}
 
-/* tabs */
-.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px}
-.tabs button{appearance:none;border:0;background:none;color:var(--muted);font:700 .95rem var(--font-body);padding:12px 14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:none}
+.tabs button{appearance:none;border:0;background:none;color:var(--muted);font:700 .95rem var(--font-body);padding:12px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .tabs .count{font-family:var(--font-data);font-weight:500;font-size:.78rem;background:var(--sunk);border-radius:6px;padding:1px 6px;margin-left:6px}
+.tabs .count.alert{background:var(--crit);color:var(--surface)}
 
-/* panels */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .stack{display:flex;flex-direction:column;gap:16px}
 .grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:820px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.grid2.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:820px){.grid2,.grid2.even{grid-template-columns:minmax(0,1fr)}}
 .step{display:flex;align-items:baseline;gap:10px}
 .step b{font-family:var(--font-data);font-weight:500;color:var(--accent);font-size:.9rem}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 
-/* form */
 .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:.85rem;font-weight:700}
-input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+input[type=text],input[type=number],input[type=date],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-height:44px}
 textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:vertical}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:.92rem}
 .check input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
 .btns{display:flex;flex-wrap:wrap;gap:8px}
-.btn{appearance:none;font:700 .92rem var(--font-body);border-radius:8px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn{appearance:none;font:700 .92rem var(--font-body);border-radius:8px;padding:10px 14px;min-height:44px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .btn.small{padding:8px 12px;font-size:.85rem;min-height:40px}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
-.file{position:relative;overflow:hidden}
+.file{position:relative;overflow:hidden;display:inline-flex;align-items:center}
 .file input{position:absolute;inset:0;opacity:0;cursor:pointer}
 
-/* canvas */
 .stage{position:relative;background:var(--sunk);border-radius:8px;overflow:hidden;touch-action:none}
 .stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
 .hint{font-size:.88rem;color:var(--muted)}
@@ -94,7 +92,6 @@ textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:ve
 .dot{width:9px;height:9px;border-radius:50%;flex:none;transform:translateY(-1px)}
 .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--crit)}
 
-/* result */
 .verdict{border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:6px;border:1.5px solid}
 .verdict.none{background:var(--ok-soft);border-color:var(--ok)}
 .verdict.mild{background:var(--warn-soft);border-color:var(--warn)}
@@ -102,8 +99,8 @@ textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:ve
 .verdict.unknown{background:var(--sunk);border-color:var(--line)}
 .verdict .big{font-family:var(--font-data);font-size:2.2rem;line-height:1.1;font-weight:500}
 .verdict .big small{font-size:.95rem;color:var(--muted)}
-.chip{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:3px 10px;border:1.5px solid currentColor;width:max-content}
-.chip.none{color:var(--ok)} .chip.mild{color:var(--warn)} .chip.moderate,.chip.severe{color:var(--crit)} .chip.unknown{color:var(--muted)}
+.chip{display:inline-block;font-size:.74rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:3px 10px;border:1.5px solid currentColor;width:max-content;white-space:nowrap}
+.chip.none,.chip.ok{color:var(--ok)} .chip.mild,.chip.warn{color:var(--warn)} .chip.moderate,.chip.severe,.chip.crit{color:var(--crit)} .chip.unknown,.chip.muted{color:var(--muted)}
 .scale{display:flex;flex-direction:column;gap:4px}
 .scale .bar{position:relative;display:grid;grid-template-columns:repeat(6,1fr);height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--line)}
 .scale .bar i{display:block}
@@ -113,30 +110,56 @@ textarea{font-family:var(--font-data);font-size:.8rem;min-height:110px;resize:ve
 .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
 .kv div{background:var(--sunk);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .kv b{font-family:var(--font-data);font-weight:500;font-size:1.05rem}
-.note{white-space:pre-wrap;font-family:var(--font-data);font-size:.8rem;background:var(--sunk);border-radius:8px;padding:12px;overflow-x:auto}
+.note{white-space:pre-wrap;font-family:var(--font-data);font-size:.8rem;background:var(--sunk);border-radius:8px;padding:12px;overflow-x:auto;margin:0}
 .banner{border-radius:8px;padding:10px 12px;font-size:.9rem;border:1.5px dashed var(--warn);background:var(--warn-soft)}
 .banner.okb{border-color:var(--ok);background:var(--ok-soft);border-style:solid}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:700;font-size:.9rem;z-index:20}
+.refline{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 8px 8px 0;padding:10px 12px;font-size:.92rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:700;font-size:.9rem;z-index:20;max-width:calc(100% - 32px)}
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.8rem;padding:6px 9px;border-radius:6px;max-width:240px;line-height:1.35}
 
-/* records */
+/* follow-up worklist */
+.sumrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.sum{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;background:var(--surface)}
+.sum b{font-family:var(--font-data);font-weight:500;font-size:1.5rem}
+.sum.crit{border-color:var(--crit);background:var(--crit-soft)} .sum.warn{border-color:var(--warn);background:var(--warn-soft)}
+.fulist{display:flex;flex-direction:column;gap:10px}
+.fu{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--surface);border-left-width:5px}
+.fu.overdue{border-left-color:var(--crit)} .fu.today{border-left-color:var(--warn)} .fu.later{border-left-color:var(--line)}
+.fu .top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between}
+.fu .who{font-weight:700;font-size:1.02rem}
+.fu .meta{font-size:.88rem;color:var(--muted)}
+.fu form{display:flex;flex-direction:column;gap:10px;border-top:1px dashed var(--line);padding-top:10px}
+.tag{font-size:.7rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--muted);white-space:nowrap}
+
+/* insights */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.metric{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.metric b{font-family:var(--font-data);font-weight:500;font-size:1.4rem}
+.metric small{color:var(--muted);font-size:.8rem}
+.cascade{display:flex;flex-direction:column;gap:8px}
+.cas{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:.9rem}
+.cas .track{height:22px;background:var(--sunk);border-radius:0 4px 4px 0;position:relative}
+.cas .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px}
+.cas .v{text-align:right;font-family:var(--font-data);font-variant-numeric:tabular-nums;font-size:.85rem}
+.cas .v small{display:block;color:var(--muted);font-size:.72rem}
+@media (max-width:520px){.cas{grid-template-columns:minmax(0,1fr) 80px}.cas .track{grid-column:1 / -1;grid-row:2}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.chart svg{width:100%;height:auto;display:block}
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
 table{border-collapse:collapse;width:100%;font-size:.85rem}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--sunk)}
 td.num,th.num{text-align:right}
 tr.ex td{color:var(--muted)}
-.tag{font-size:.7rem;font-weight:700;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filters .field{min-width:150px;flex:1 1 150px;max-width:240px}
 
-/* metrics */
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.metric{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.metric b{font-family:var(--font-data);font-weight:500;font-size:1.4rem}
-.chart svg{width:100%;height:auto;display:block}
-
-/* method */
 .prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
 .prose ul,.prose ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .refs{font-size:.86rem}
+#dhisPreview{white-space:pre}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 </head>
@@ -145,13 +168,15 @@ tr.ex td{color:var(--muted)}
   <header class="mast">
     <div class="brand">
       <h1>Omu<span>saayi</span></h1>
-      <p>On-device eyelid photo screening for anaemia in pregnant women and girls · OapAI Technologies</p>
+      <p>Anaemia screening, referral and follow-up for pregnant women and girls · OapAI Technologies</p>
     </div>
     <span class="proto">Research prototype · screening only, not a diagnosis</span>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" id="tab-screen" aria-selected="true" data-tab="screen">Screen</button>
+    <button role="tab" id="tab-follow" aria-selected="false" data-tab="follow">Follow-up <span class="count" id="fuCount">0</span></button>
+    <button role="tab" id="tab-insights" aria-selected="false" data-tab="insights">Insights</button>
     <button role="tab" id="tab-calib" aria-selected="false" data-tab="calib">Calibrate</button>
     <button role="tab" id="tab-records" aria-selected="false" data-tab="records">Records <span class="count" id="recCount">0</span></button>
     <button role="tab" id="tab-method" aria-selected="false" data-tab="method">Method</button>
@@ -168,7 +193,11 @@ tr.ex td{color:var(--muted)}
         <div class="field"><label for="age">Age (years)</label><input type="number" id="age" min="10" max="49" value="24"></div>
         <div class="field" id="triField"><label for="tri">Trimester</label>
           <select id="tri"><option value="1">First</option><option value="2" selected>Second</option><option value="3">Third</option></select></div>
+        <div class="field"><label for="district">District</label>
+          <select id="district"><option>Kampala</option><option>Wakiso</option><option>Other</option></select></div>
+        <div class="field"><label for="site">Screening site</label><input type="text" id="site" list="siteList" placeholder="e.g. Kawempe NRH" autocomplete="off"></div>
       </div>
+      <datalist id="siteList"></datalist>
     </div>
 
     <div class="grid2">
@@ -204,29 +233,87 @@ tr.ex td{color:var(--muted)}
           <p id="action">Load a photo and mark the eyelid lining.</p>
         </div>
         <div class="scale" aria-hidden="true">
-          <div class="bar" id="hcsBar"><i style="background:#F3D9D5"></i><i style="background:#EDB9B2"></i><i style="background:#E2958C"></i><i style="background:#D06D66"></i><i style="background:#B44849"></i><i style="background:#8E2433"></i><div class="marker" id="hcsMarker" hidden></div></div>
+          <div class="bar"><i style="background:#F3D9D5"></i><i style="background:#EDB9B2"></i><i style="background:#E2958C"></i><i style="background:#D06D66"></i><i style="background:#B44849"></i><i style="background:#8E2433"></i><div class="marker" id="hcsMarker" hidden></div></div>
           <div class="ticks"><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14 g/dL</span></div>
         </div>
         <div class="kv" id="feat"></div>
-        <details>
-          <summary class="label" style="cursor:pointer">Referral note</summary>
-          <div class="stack" style="gap:8px;margin-top:8px">
-            <pre class="note" id="refNote">No result yet.</pre>
-            <div class="btns"><button class="btn small" id="copyNote" type="button">Copy referral note</button></div>
-          </div>
-        </details>
       </div>
     </div>
 
     <div class="panel">
-      <div class="step"><b>4</b><h3>Add to the calibration set</h3></div>
-      <p class="hint">Every reading paired with a HemoCue or lab haemoglobin makes the model better for Ugandan women. Only colour numbers are saved on this phone. The photo is never stored or sent anywhere.</p>
+      <div class="step"><b>4</b><h3>Save, refer and follow up</h3></div>
+      <div class="refline" id="refLine">No referral needed for this result.</div>
       <div class="fields">
-        <div class="field"><label for="labHb">HemoCue / lab Hb (g/dL)</label><input type="number" id="labHb" step="0.1" min="3" max="20" placeholder="e.g. 10.4"></div>
-        <div class="field"><label for="site">Site</label><input type="text" id="site" placeholder="e.g. Kawempe NRH ANC" autocomplete="off"></div>
+        <div class="field" id="referToField"><label for="referTo">Refer to</label><input type="text" id="referTo" list="siteList" placeholder="Facility for blood Hb test" autocomplete="off"></div>
+        <div class="field"><label for="labHb">HemoCue Hb now, if done (g/dL)</label><input type="number" id="labHb" step="0.1" min="3" max="20" placeholder="Optional, improves the model"></div>
       </div>
-      <label class="check"><input type="checkbox" id="consent"><span>The client (and a parent or guardian for girls under 18) gave informed consent for this anonymous reading to be kept for research.</span></label>
-      <div class="btns"><button class="btn primary" id="saveRec" type="button" disabled>Save reading</button></div>
+      <label class="check"><input type="checkbox" id="consent"><span>The client (and a parent or guardian for girls under 18) agreed to this anonymous record being kept for care follow-up and research.</span></label>
+      <div class="btns"><button class="btn primary" id="saveRec" type="button" disabled>Save screening</button></div>
+      <details>
+        <summary class="label" style="cursor:pointer">Referral note to hand the client</summary>
+        <div class="stack" style="gap:8px;margin-top:8px">
+          <pre class="note" id="refNote">No result yet.</pre>
+          <div class="btns"><button class="btn small" id="copyNote" type="button">Copy referral note</button></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- FOLLOW-UP -->
+  <section id="follow" class="stack" role="tabpanel" hidden>
+    <div class="panel">
+      <div class="row">
+        <h2>Follow-up worklist</h2>
+        <div class="field" style="min-width:180px"><label for="fuSite" class="label">Site</label><select id="fuSite"></select></div>
+      </div>
+      <div id="fuBanner"></div>
+      <div class="sumrow" id="fuSum"></div>
+      <p class="hint">Clients flagged at screening appear here until their blood Hb is confirmed, treatment is checked with a repeat Hb after 4 weeks, or they are recorded as lost to follow-up.</p>
+    </div>
+    <div class="fulist" id="fuList"></div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="insights" class="stack" role="tabpanel" hidden>
+    <div class="panel">
+      <h2>Programme insights</h2>
+      <p class="muted">Aggregate, anonymous indicators for facility in-charges, district health teams and the Ministry. Use them to plan iron-folic acid supplies, find facilities where referrals stall, and report monthly.</p>
+      <div id="inBanner"></div>
+      <div class="filters">
+        <div class="field"><label for="inPeriod">Period</label><select id="inPeriod"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="0">All time</option></select></div>
+        <div class="field"><label for="inDistrict">District</label><select id="inDistrict"><option value="">All districts</option><option>Kampala</option><option>Wakiso</option><option>Other</option></select></div>
+      </div>
+      <div class="metrics" id="inKpi"></div>
+    </div>
+    <div class="grid2 even">
+      <div class="panel">
+        <h3>Care cascade</h3>
+        <p class="hint">How many screened clients reach each step. The figure under each count is the share that moved on from the step above.</p>
+        <div class="cascade" id="inCascade"></div>
+      </div>
+      <div class="panel">
+        <h3>Screening by month</h3>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Screen positive</span><span><i style="background:var(--accent-mid)"></i>Screen negative</span></div>
+        <div class="chart" id="inMonthly"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Facility accountability</h3>
+      <p class="hint">Referral completion is the share of due referrals with a confirmed blood Hb recorded. Below 60% is marked red and below 80% amber.</p>
+      <div class="tablewrap"><table id="inSites"></table></div>
+    </div>
+    <div class="panel">
+      <h3>By group</h3>
+      <div class="tablewrap"><table id="inGroups"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Monthly report for DHIS2</h3>
+      <p class="hint">Aggregate counts per site, month and group in the DHIS2 data-value import layout. Data element and organisation-unit names need mapping to your DHIS2 instance's IDs before import.</p>
+      <pre class="note" id="dhisPreview"></pre>
+      <div class="btns">
+        <button class="btn" id="copyDhis" type="button">Copy DHIS2 CSV</button>
+        <button class="btn" id="dlDhis" type="button" hidden>Download DHIS2 CSV</button>
+      </div>
     </div>
   </section>
 
@@ -234,23 +321,23 @@ tr.ex td{color:var(--muted)}
   <section id="calib" class="stack" role="tabpanel" hidden>
     <div class="panel">
       <h2>Calibration model</h2>
-      <p class="muted">The screener learns a mapping from eyelid colour to haemoglobin using readings you pair with a HemoCue result. It needs at least 15 real pairs. Until then it runs on simulated example data so you can see how it works.</p>
+      <p class="muted">The screener learns a mapping from eyelid colour to haemoglobin using screenings paired with a HemoCue result taken at the same visit. It needs at least 15 real pairs. Until then it runs on simulated example data so you can see how it works.</p>
       <div id="calibBanner"></div>
       <div class="metrics" id="metrics"></div>
       <div class="chart" id="chart"></div>
-      <p class="hint">Each dot is one reading: the measured Hb against the Hb the model predicted without seeing that reading (leave-one-out). Dots near the diagonal are good. The shaded box marks readings that were anaemic by blood test but missed by the screen.</p>
+      <p class="hint">Each dot is one reading: measured Hb against the Hb the model predicted without seeing that reading (leave-one-out). Dots near the diagonal are good. The shaded box marks readings that were anaemic by blood test but missed by the screen.</p>
     </div>
     <div class="panel">
       <h3>Model details</h3>
-      <div id="coef" class="note"></div>
+      <pre id="coef" class="note"></pre>
     </div>
   </section>
 
   <!-- RECORDS -->
   <section id="records" class="stack" role="tabpanel" hidden>
     <div class="panel">
-      <h2>Saved readings</h2>
-      <p class="muted">Readings stay on this device. Export them as CSV to combine data from several phones, or import a CSV another team member exported.</p>
+      <h2>Saved records</h2>
+      <p class="muted">Records stay on this device. Export them as CSV to combine data from several phones, or import a CSV another team member exported.</p>
       <div class="btns">
         <button class="btn" id="copyCsv" type="button">Copy CSV</button>
         <button class="btn" id="dlCsv" type="button" hidden>Download CSV</button>
@@ -259,11 +346,11 @@ tr.ex td{color:var(--muted)}
       <div class="tablewrap"><table id="recTable"></table></div>
     </div>
     <div class="panel">
-      <h3>Import readings</h3>
-      <p class="hint">Paste a CSV exported from Omusaayi on another phone.</p>
-      <textarea id="importBox" aria-label="CSV to import" placeholder="id,timestamp,code,group,age,trimester,site,ei,red_fraction,a_star,mean_r,mean_g,mean_b,white_ref,lab_hb,example"></textarea>
+      <h3>Import records</h3>
+      <p class="hint">Paste a CSV exported from Omusaayi on another phone. Records already on this phone are updated with the newer follow-up status.</p>
+      <textarea id="importBox" aria-label="CSV to import" placeholder="id,timestamp,code,group,..."></textarea>
       <div class="btns"><button class="btn" id="doImport" type="button">Import</button></div>
-      <textarea id="csvOut" aria-label="CSV export" hidden readonly></textarea>
+      <textarea id="csvOut" aria-label="Text to copy" hidden readonly></textarea>
     </div>
   </section>
 
@@ -271,13 +358,23 @@ tr.ex td{color:var(--muted)}
   <section id="method" class="stack" role="tabpanel" hidden>
     <div class="panel prose">
       <h2>How Omusaayi works</h2>
-      <p><em>Omusaayi</em> means blood in Luganda. The inner lining of the lower eyelid (palpebral conjunctiva) is rich in blood vessels and carries no skin pigment, so its redness tracks haemoglobin in women of every skin tone. Health workers already check it by eye for pallor. Omusaayi measures that colour with a phone camera instead.</p>
+      <p><em>Omusaayi</em> means blood in Luganda. The inner lining of the lower eyelid (palpebral conjunctiva) is rich in blood vessels and carries no skin pigment, so its redness tracks haemoglobin in women of every skin tone. Health workers already check it by eye for pallor. Omusaayi measures that colour with a phone camera, then makes sure a positive screen leads to a blood test, treatment and a repeat check.</p>
+      <h3>Screening</h3>
       <ol>
         <li><strong>Colour correction.</strong> A white paper in the photo sets the white balance, which cancels most of the difference between phones and lighting.</li>
         <li><strong>Feature extraction.</strong> Inside the marked lining, the app drops glare and shadow pixels, then computes the erythema index (100 × log₁₀ R/G), the share of strongly red pixels, and CIELAB redness (a*).</li>
-        <li><strong>Calibrated estimate.</strong> A ridge regression, refit on this device from HemoCue-paired readings, turns those three numbers into an Hb estimate with an error range taken from leave-one-out testing.</li>
-        <li><strong>Action.</strong> The estimate is graded against WHO cut-offs for the person's group, and the app suggests a next step and writes a referral note.</li>
+        <li><strong>Calibrated estimate.</strong> A ridge regression, refit on the device from HemoCue-paired readings, turns those numbers into an Hb estimate with an error range from leave-one-out testing.</li>
+        <li><strong>Grading.</strong> The estimate is graded against WHO cut-offs for the client's group. Results within the error range of the cut-off count as borderline and are referred too.</li>
       </ol>
+      <h3>Referral and follow-up</h3>
+      <ol>
+        <li><strong>Referral.</strong> A positive or borderline screen creates a referral with a due date set by severity: severe today, moderate within 3 days, borderline within 7 days, mild by the next antenatal visit (14 days).</li>
+        <li><strong>Confirmation.</strong> The health worker records the confirmed blood Hb and whether treatment started.</li>
+        <li><strong>Repeat check.</strong> Treated clients come back on the worklist after 4 weeks for a repeat Hb. Clients who are still anaemic stay on the list.</li>
+        <li><strong>Accountability.</strong> Overdue referrals are flagged. Clients not reached are recorded as lost to follow-up, so every positive screen ends in a known outcome.</li>
+      </ol>
+      <h3>Programme intelligence</h3>
+      <p>The Insights tab turns the same records into the care cascade, referral completion and loss to follow-up by facility, screen-positive rates by group, monthly trends, and a DHIS2-ready monthly aggregate. No individual data leaves the phone unless a team member exports it.</p>
       <h3>WHO haemoglobin cut-offs used (g/dL)</h3>
       <div class="tablewrap"><table>
         <tr><th>Group</th><th class="num">Anaemia below</th><th class="num">Mild</th><th class="num">Moderate</th><th class="num">Severe below</th></tr>
@@ -288,9 +385,10 @@ tr.ex td{color:var(--muted)}
       <h3>Safety by design</h3>
       <ul>
         <li>All image processing happens in the browser. Photos are never uploaded or saved.</li>
-        <li>Saved readings hold colour numbers, a client code and a lab Hb. No names and no images.</li>
-        <li>Nothing is saved without a recorded consent tick.</li>
+        <li>Records hold colour numbers, a client code, results and follow-up dates. No names and no images.</li>
+        <li>Nothing is saved without a recorded consent tick, including guardian consent for girls under 18.</li>
         <li>Every result is labelled as a screen. Borderline and positive results always point to a blood test.</li>
+        <li>Reports share only aggregate counts.</li>
       </ul>
       <h3>Why Uganda needs it</h3>
       <ul>
@@ -300,9 +398,9 @@ tr.ex td{color:var(--muted)}
         <li>Adolescent girls are largely missing from national anaemia surveys, even though school studies find high rates.</li>
       </ul>
       <h3>Limits</h3>
-      <p>Phone-based Hb estimates are less precise than a blood test and are best at catching moderate and severe anaemia. The example model in this prototype is trained on simulated numbers and must not be used on real clients. A Ugandan validation study against HemoCue is the next step.</p>
+      <p>Phone-based Hb estimates are less precise than a blood test and are best at catching moderate and severe anaemia. The example model and the example follow-up records in this prototype are simulated and must not be used for real clients or reporting. A Ugandan validation study against HemoCue is the next step.</p>
       <h3>Open source</h3>
-      <p>Omusaayi is released by OapAI Technologies under the Apache 2.0 licence, in partnership plans with the Department of Computer Science, Makerere University.</p>
+      <p>Omusaayi is released by OapAI Technologies under the Apache 2.0 licence, with planned collaboration with the Department of Computer Science, Makerere University.</p>
       <div class="refs muted">
         <p><strong>Key references.</strong> Collings et al., PLOS ONE 2016 (conjunctiva photos and erythema index). Mannino et al., Nature Communications 2018 (smartphone Hb from fingernail photos). Jay et al., PLOS ONE 2024 (real-time conjunctival app). Tancred et al., PLOS Global Public Health 2024 (anaemia care readiness in Ghana and Uganda). Anaemia in Ugandan pregnant women: cross-sectional study and meta-analysis, Tropical Medicine and Health 2021.</p>
       </div>
@@ -310,40 +408,36 @@ tr.ex td{color:var(--muted)}
   </section>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="tip" id="tip" hidden></div>
 
 <script>
 (function(){
 "use strict";
 const $=s=>document.querySelector(s);
-const KEY="omusaayi.v1";
+const KEY="omusaayi.v1",VERSION=2;
 const FEATS=["ei","red_fraction","a_star"];
+const GL={pregnant:"Pregnant",girl:"Adolescent girl",woman:"Woman"};
+const STATUS={none:"No referral",referred:"Awaiting blood Hb",treatment:"On treatment",resolved:"Recovered",not_anaemic:"Not anaemic",lost:"Lost to follow-up"};
+const DUE={severe:0,moderate:3,border:7,mild:14};
+const OPEN=s=>s==="referred"||s==="treatment";
+
+/* ---------- dates (all as YYYY-MM-DD) ---------- */
+function isoLocal(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+const today=()=>isoLocal(new Date());
+function addDays(s,n){const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function diffDays(a,b){return Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/864e5)}
+function fmtDate(s){if(!s)return"—";return new Date(s+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"})}
+function dateOf(r){const t=String(r.timestamp||"");return t.length>=10?isoLocal(new Date(t)):""}
 
 /* ---------- storage ---------- */
 function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 
-/* ---------- simulated example data ---------- */
+/* ---------- maths helpers ---------- */
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
-/* Simulated lining colour for a given Hb: paler and less red as Hb falls. Illustrative only. */
-function hbColour(hb){const t=Math.max(0,Math.min(1,(hb-6)/8.5));return[217-36*t,142-64*t,144-58*t]}
-function features(pixels){let R=0,G=0,B=0,red=0;
-  pixels.forEach(([r,g,b])=>{R+=r;G+=g;B+=b;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;if(mx===r&&s>.48&&(g-b)/(mx-mn||1)<.35)red++});
-  const n=pixels.length;R/=n;G/=n;B/=n;return{ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:lab(R,G,B).a,mean_r:R,mean_g:G,mean_b:B}}
-function examples(){
-  const r=rng(42),out=[],groups=["pregnant","pregnant","pregnant","girl","woman"];
-  for(let i=0;i<36;i++){
-    const hb=+(6.2+r()*8.4).toFixed(1);
-    const c=hbColour(hb+gauss(r)*1.1).map(v=>v+gauss(r)*4);
-    const px=[];for(let k=0;k<300;k++){const j=gauss(r)*9;px.push([c[0]+j+gauss(r)*4,c[1]+j+gauss(r)*4,c[2]+j+gauss(r)*4])}
-    const f=features(px),g=groups[i%groups.length];
-    out.push({id:"ex"+i,timestamp:new Date(Date.UTC(2026,8,1+i%28,8+i%9)).toISOString(),code:"SIM-"+String(i+1).padStart(3,"0"),group:g,age:g==="girl"?13+i%7:20+i%20,trimester:g==="pregnant"?1+i%3:"",site:"Simulated",
-      ei:+f.ei.toFixed(3),red_fraction:+f.red_fraction.toFixed(4),a_star:+f.a_star.toFixed(3),mean_r:+f.mean_r.toFixed(1),mean_g:+f.mean_g.toFixed(1),mean_b:+f.mean_b.toFixed(1),white_ref:1,lab_hb:hb,example:1});
-  }
-  return out;
-}
-let state=load()||{records:examples()};
-if(!Array.isArray(state.records))state={records:examples()};
+function has(v){return v!==""&&v!=null&&isFinite(v)}
+function median(a){if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2}
 
 /* ---------- WHO cut-offs ---------- */
 function cuts(group,age){
@@ -352,6 +446,62 @@ function cuts(group,age){
   return{cut:12,mod:11,sev:8};
 }
 function band(hb,c){if(hb<c.sev)return"severe";if(hb<c.mod)return"moderate";if(hb<c.cut)return"mild";return"none"}
+
+/* ---------- colour features ---------- */
+function lab(r,g,b){const f=c=>{c/=255;return c>.04045?((c+.055)/1.055)**2.4:c/12.92};
+  const R=f(r),G=f(g),B=f(b);let X=(R*.4124+G*.3576+B*.1805)/.95047,Y=R*.2126+G*.7152+B*.0722,Z=(R*.0193+G*.1192+B*.9505)/1.08883;
+  const h=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;return{L:116*h(Y)-16,a:500*(h(X)-h(Y)),b:200*(h(Y)-h(Z))}}
+function isRed(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;return mx===r&&s>.48&&(g-b)/(mx-mn||1)<.35}
+/* Simulated lining colour for a given Hb: paler and less red as Hb falls. Illustrative only. */
+function hbColour(hb){const t=Math.max(0,Math.min(1,(hb-6)/8.5));return[217-36*t,142-64*t,144-58*t]}
+function features(pixels){let R=0,G=0,B=0,red=0;
+  pixels.forEach(([r,g,b])=>{R+=r;G+=g;B+=b;if(isRed(r,g,b))red++});
+  const n=pixels.length;R/=n;G/=n;B/=n;return{ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:lab(R,G,B).a,mean_r:R,mean_g:G,mean_b:B}}
+
+/* ---------- simulated example data ---------- */
+const SIM_SITES=[["Kawempe NRH","Kampala",.86],["Kisenyi HC IV","Kampala",.72],["Wakiso HC IV","Wakiso",.6],["Kasangati HC IV","Wakiso",.8],["Nansana HC II","Wakiso",.48]];
+function examples(){
+  const r=rng(42),out=[],now=Date.now(),T=today(),groups=["pregnant","pregnant","pregnant","pregnant","girl","girl","woman"];
+  for(let i=0;i<160;i++){
+    const g=groups[Math.floor(r()*groups.length)],[site,district,comp]=SIM_SITES[Math.floor(r()*SIM_SITES.length)];
+    const age=g==="girl"?10+Math.floor(r()*10):g==="pregnant"?16+Math.floor(r()*26):20+Math.floor(r()*29);
+    const hb=+Math.max(5.6,Math.min(15.4,{pregnant:11.8,girl:12.8,woman:13.0}[g]+gauss(r)*1.5)).toFixed(1);
+    const col=hbColour(hb+gauss(r)*1.1).map(v=>v+gauss(r)*4),px=[];
+    for(let k=0;k<200;k++){const j=gauss(r)*9;px.push([col[0]+j+gauss(r)*4,col[1]+j+gauss(r)*4,col[2]+j+gauss(r)*4])}
+    const f=features(px),ts=new Date(now-Math.floor(r()*100)*864e5-r()*8*36e5),d=isoLocal(ts);
+    const c=cuts(g,age),shb=+(hb+gauss(r)*.9).toFixed(1),b=band(shb,c),border=b==="none"&&shb-c.cut<.9;
+    const rec={id:"ex"+i,timestamp:ts.toISOString(),code:"SIM-"+String(i+1).padStart(3,"0"),group:g,age,trimester:g==="pregnant"?1+Math.floor(r()*3):"",
+      district,site,ei:+f.ei.toFixed(3),red_fraction:+f.red_fraction.toFixed(4),a_star:+f.a_star.toFixed(3),
+      mean_r:+f.mean_r.toFixed(1),mean_g:+f.mean_g.toFixed(1),mean_b:+f.mean_b.toFixed(1),white_ref:1,
+      lab_hb:r()<.4?hb:"",screen_hb:shb,screen_flag:b,borderline:border?1:0,referred:0,refer_to:"",due:"",status:"none",
+      confirm_hb:"",confirm_date:"",treatment:"",repeat_hb:"",repeat_date:"",updated:ts.toISOString(),example:1};
+    if(b!=="none"||border){
+      rec.referred=1;rec.status="referred";rec.refer_to=site;rec.due=addDays(d,DUE[border?"border":b]);
+      if(rec.due<T||r()<.3){
+        if(r()<comp){
+          let cd=addDays(rec.due,Math.floor(r()*6)-2);if(cd>T)cd=T;if(cd<d)cd=d;
+          rec.confirm_hb=+(hb+gauss(r)*.3).toFixed(1);rec.confirm_date=cd;
+          if(rec.confirm_hb<c.cut){
+            rec.treatment=rec.confirm_hb<c.sev?"Referred to higher level":"Iron-folic acid started";rec.status="treatment";rec.due=addDays(cd,28);
+            if(rec.due<T&&r()<comp){let rd=addDays(rec.due,Math.floor(r()*4));if(rd>T)rd=T;
+              rec.repeat_hb=+(rec.confirm_hb+1.3+gauss(r)*.6).toFixed(1);rec.repeat_date=rd;
+              if(rec.repeat_hb>=c.cut)rec.status="resolved";else rec.due=addDays(rd,28)}
+          }else rec.status="not_anaemic";
+        }else if(diffDays(rec.due,T)>14&&r()<.6)rec.status="lost";
+      }
+    }
+    out.push(rec);
+  }
+  return out;
+}
+let state=load();
+if(!state||!Array.isArray(state.records))state={v:VERSION,records:examples()};
+else if(state.v!==VERSION){state.records=state.records.filter(r=>!+r.example).map(r=>({status:"none",referred:0,...r})).concat(examples());state.v=VERSION;}
+persist();
+
+/* Which records drive the worklist and insights: real ones once any exist, otherwise the examples. */
+function realCount(){return state.records.filter(r=>!+r.example).length}
+function dataset(){const real=state.records.filter(r=>!+r.example);return real.length?real:state.records.filter(r=>+r.example)}
 
 /* ---------- regression ---------- */
 function solve(A,b){const n=b.length;A=A.map(r=>r.slice());b=b.slice();
@@ -369,19 +519,17 @@ function fit(rows,lambda){
   return{mu,sd,w:solve(A,b)};
 }
 function predict(m,r){return m.w[0]+FEATS.reduce((s,f,j)=>s+m.w[j+1]*(r[f]-m.mu[j])/m.sd[j],0)}
-
 let model=null;
 function buildModel(){
-  const paired=state.records.filter(r=>isFinite(r.lab_hb)&&r.lab_hb!==""&&FEATS.every(f=>isFinite(r[f])&&r[f]!==""));
-  const real=paired.filter(r=>!+r.example);
-  const useReal=real.length>=15;
+  const paired=state.records.filter(r=>has(r.lab_hb)&&FEATS.every(f=>has(r[f])));
+  const real=paired.filter(r=>!+r.example),useReal=real.length>=15;
   const rows=(useReal?real:paired.filter(r=>+r.example)).map(r=>({...r,lab_hb:+r.lab_hb,ei:+r.ei,red_fraction:+r.red_fraction,a_star:+r.a_star}));
   if(rows.length<8){model=null;return}
   const m=fit(rows);
   const loo=rows.map((r,i)=>{const mm=fit(rows.filter((_,k)=>k!==i));return{y:r.lab_hb,p:predict(mm,r),c:cuts(r.group,r.age)}});
   const err=loo.map(o=>o.p-o.y),n=loo.length;
   const mae=err.reduce((s,e)=>s+Math.abs(e),0)/n,rmse=Math.sqrt(err.reduce((s,e)=>s+e*e,0)/n);
-  const ym=loo.reduce((s,o)=>s+o.y,0)/n,ss=loo.reduce((s,o)=>s+(o.y-ym)**2,0);
+  const ym=loo.reduce((s,o)=>s+o.y,0)/n,ss=loo.reduce((s,o)=>s+(o.y-ym)**2,0)||1;
   const r2=1-err.reduce((s,e)=>s+e*e,0)/ss;
   let tp=0,fn=0,tn=0,fp=0;loo.forEach(o=>{const a=o.y<o.c.cut,s=o.p<o.c.cut;if(a&&s)tp++;else if(a)fn++;else if(s)fp++;else tn++});
   model={m,loo,mae,rmse,r2,sens:tp/(tp+fn||1),spec:tn/(tn+fp||1),n,real:useReal,realCount:real.length,tp,fn,tn,fp};
@@ -389,17 +537,13 @@ function buildModel(){
 
 /* ---------- image handling ---------- */
 const cv=$("#cv"),cx=cv.getContext("2d",{willReadFrequently:true});
-let img=null,roi=null,white=null,mode="lid",drag=null,feat=null,demo=false;
+let img=null,roi=null,white=null,mode="lid",drag=null,feat=null,demo=false,result=null;
 const off=document.createElement("canvas"),ox=off.getContext("2d",{willReadFrequently:true});
-
-function setImage(source,w,h){
-  const s=Math.min(1,1200/Math.max(w,h));off.width=Math.round(w*s);off.height=Math.round(h*s);
-  ox.drawImage(source,0,0,off.width,off.height);cv.width=off.width;cv.height=off.height;img=true;
-}
+function setImage(source,w,h){const s=Math.min(1,1200/Math.max(w,h));off.width=Math.round(w*s);off.height=Math.round(h*s);
+  ox.drawImage(source,0,0,off.width,off.height);cv.width=off.width;cv.height=off.height;img=true}
 function draw(){
   if(!img){cx.fillStyle=getComputedStyle(document.body).getPropertyValue("--sunk");cx.fillRect(0,0,cv.width,cv.height);return}
-  cx.drawImage(off,0,0);
-  const lw=Math.max(2,cv.width/300);
+  cx.drawImage(off,0,0);const lw=Math.max(2,cv.width/300);
   if(roi){cx.save();cx.lineWidth=lw;cx.strokeStyle="#FFFFFF";cx.setLineDash([lw*4,lw*3]);cx.strokeRect(roi.x,roi.y,roi.w,roi.h);
     cx.strokeStyle="#9B1D35";cx.lineDashOffset=lw*3.5;cx.strokeRect(roi.x,roi.y,roi.w,roi.h);cx.restore()}
   if(white){cx.save();cx.lineWidth=lw;cx.strokeStyle="#111";cx.beginPath();cx.arc(white.x,white.y,lw*7,0,7);cx.stroke();
@@ -420,12 +564,12 @@ cv.addEventListener("pointercancel",()=>{if(!drag)return;drag=null;roi=prevRoi;d
 function clampRoi(r){r.w=Math.max(12,Math.min(cv.width,r.w));r.h=Math.max(8,Math.min(cv.height,r.h));
   r.x=Math.max(0,Math.min(cv.width-r.w,r.x));r.y=Math.max(0,Math.min(cv.height-r.h,r.y));return r}
 function placeAt(p){const w=roi?roi.w:cv.width*.26,h=roi?roi.h:cv.height*.07;roi=clampRoi({x:p.x-w/2,y:p.y-h/2,w,h})}
-document.getElementById("sizeBtns").addEventListener("click",e=>{const v=e.target.dataset&&e.target.dataset.rs;if(!v)return;
+$("#sizeBtns").addEventListener("click",e=>{const v=e.target.dataset&&e.target.dataset.rs;if(!v)return;
   if(!roi){toast("Tap the pink lining first to place the box.");return}
   const[fw,fh]=v.split(",").map(Number),cx0=roi.x+roi.w/2,cy0=roi.y+roi.h/2,w=roi.w*fw,h=roi.h*fh;
   roi=clampRoi({x:cx0-w/2,y:cy0-h/2,w,h});draw();analyse()});
-/* Find the lining automatically: the window with the most pink-red pixels (red-dominant, saturated,
-   and with blue close to green, which rules out brown skin). */
+/* Find the lining automatically: the window with the most pink-red pixels
+   (red-dominant, saturated, with blue close to green, which rules out brown skin). */
 function autoFind(){
   const W=off.width,H=off.height,s=Math.max(1,Math.floor(W/240)),w=Math.floor(W/s),h=Math.floor(H/s);
   const d=ox.getImageData(0,0,W,H).data,I=new Float32Array((w+1)*(h+1));
@@ -437,14 +581,9 @@ function autoFind(){
     const v=I[(y+bh)*(w+1)+x+bw]-I[y*(w+1)+x+bw]-I[(y+bh)*(w+1)+x]+I[y*(w+1)+x];if(v>best){best=v;bx=x;by=y}}
   if(best<bw*bh*.5)return false;
   roi=clampRoi({x:bx*s,y:by*s,w:bw*s,h:bh*s});return true}
-
 function sampleWhite(p){const r=Math.max(4,Math.round(cv.width/150)),x=Math.max(0,Math.round(p.x-r)),y=Math.max(0,Math.round(p.y-r));
   const d=ox.getImageData(x,y,r*2,r*2).data;let R=0,G=0,B=0,n=0;for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++}
   return{x:p.x,y:p.y,r:R/n,g:G/n,b:B/n}}
-
-function lab(r,g,b){const f=c=>{c/=255;return c>.04045?((c+.055)/1.055)**2.4:c/12.92};
-  const R=f(r),G=f(g),B=f(b);let X=(R*.4124+G*.3576+B*.1805)/.95047,Y=R*.2126+G*.7152+B*.0722,Z=(R*.0193+G*.1192+B*.9505)/1.08883;
-  const h=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;return{L:116*h(Y)-16,a:500*(h(X)-h(Y)),b:200*(h(Y)-h(Z))}}
 
 function analyse(){
   const qc=[];feat=null;
@@ -457,79 +596,88 @@ function analyse(){
   for(let i=0;i<d.length;i+=4){tot++;let r=d[i],g=d[i+1],b=d[i+2];
     if(r>245&&g>245&&b>245){spec++;continue}if(r+g+b<60){dark++;continue}
     if(wr){r=Math.min(255,r*245/wr.r);g=Math.min(255,g*245/wr.g);b=Math.min(255,b*245/wr.b)}
-    R+=r;G+=g;B+=b;n++;
-    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),s=mx?(mx-mn)/mx:0;
-    if(mx===r&&s>.48&&(g-b)/(mx-mn||1)<.35)red++}
-  const area=w*h;
-  if(area<1500)qc.push(["bad","Box is too small. Cover more of the lining."]);else qc.push(["ok","Box size is fine."]);
+    R+=r;G+=g;B+=b;n++;if(isRed(r,g,b))red++}
+  if(w*h<1500)qc.push(["bad","Box is too small. Cover more of the lining."]);else qc.push(["ok","Box size is fine."]);
   if(spec/tot>.2)qc.push(["bad","Too much glare. Retake without flash or out of direct sun."]);
   else if(spec/tot>.05)qc.push(["warn","Some glare inside the box. Shrink the box to avoid shiny spots."]);
   if(dark/tot>.25)qc.push(["bad","Too much shadow. Retake in better light."]);
   if(!n){render(qc);return}
   R/=n;G/=n;B/=n;
-  const bright=(R+G+B)/3;
-  if(bright<60)qc.push(["bad","Lining is too dark to read."]);
-  if(!white)qc.push(["warn","No white reference. Tap the white paper for colour correction."]);
+  if((R+G+B)/3<60)qc.push(["bad","Lining is too dark to read."]);
+  if(!white)qc.push(["warn","No white reference. Tap Mark white paper, then the paper."]);
   else{const m=(white.r+white.g+white.b)/3,dev=Math.max(Math.abs(white.r-m),Math.abs(white.g-m),Math.abs(white.b-m))/m;
     if(m<120)qc.push(["warn","White paper looks grey. Use brighter light."]);
     else if(dev>.18)qc.push(["warn","Strong colour cast in the light. Correction applied, but daylight is better."]);
     else qc.push(["ok","White reference set."]);}
-  const L=lab(R,G,B);
-  feat={ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:L.a,mean_r:R,mean_g:G,mean_b:B,white_ref:white?1:0,
-        usable:!qc.some(q=>q[0]==="bad")};
+  feat={ei:100*Math.log10(R/Math.max(G,1)),red_fraction:red/n,a_star:lab(R,G,B).a,mean_r:R,mean_g:G,mean_b:B,white_ref:white?1:0,usable:!qc.some(q=>q[0]==="bad")};
   render(qc);
 }
 
 /* ---------- result rendering ---------- */
 const ACT={
   none:"No anaemia flag. Continue routine Hb testing at antenatal visits.",
-  mild:"Possible mild anaemia. Confirm with a blood Hb test at the next visit, and counsel on iron-folic acid adherence and iron-rich local foods such as beans, dark green leaves and small fish.",
-  moderate:"Possible moderate anaemia. Refer for a blood Hb test within days and manage per Ministry of Health guidelines.",
+  mild:"Possible mild anaemia. Confirm with a blood Hb test by the next visit, and counsel on iron-folic acid adherence and iron-rich local foods such as beans, dark green leaves and small fish.",
+  moderate:"Possible moderate anaemia. Refer for a blood Hb test within 3 days and manage per Ministry of Health guidelines.",
   severe:"Possible severe anaemia. Refer today to the nearest HC IV or hospital for urgent assessment.",
-  border:"Result is close to the anaemia cut-off. Confirm with a blood Hb test before deciding."
+  border:"Result is close to the anaemia cut-off. Confirm with a blood Hb test within 7 days."
 };
 const LABEL={none:"No flag",mild:"Possible mild",moderate:"Possible moderate",severe:"Possible severe",unknown:"No estimate"};
+let lastQc=[];
 function render(qc){
+  lastQc=qc;result=null;
   $("#qc").innerHTML=qc.map(q=>`<li><span class="dot ${q[0]}"></span><span>${q[1]}</span></li>`).join("");
   const v=$("#verdict"),chip=$("#chip"),out=$("#hbOut"),act=$("#action"),mk=$("#hcsMarker");
   $("#modelBanner").innerHTML=model&&!model.real?`<div class="banner">Example model trained on <strong>simulated</strong> data. Results show how the tool works and must not be used on real clients.</div>`:"";
   const set=(cls,lbl,big,text)=>{v.className="verdict "+cls;chip.className="chip "+cls;chip.textContent=lbl;out.innerHTML=big;act.textContent=text};
   $("#feat").innerHTML=feat?[["Erythema index",feat.ei.toFixed(1)],["Red pixel share",(feat.red_fraction*100).toFixed(0)+"%"],["CIELAB a*",feat.a_star.toFixed(1)],["Mean RGB",`${Math.round(feat.mean_r)}·${Math.round(feat.mean_g)}·${Math.round(feat.mean_b)}`]].map(k=>`<div><span class="label">${k[0]}</span><b>${k[1]}</b></div>`).join(""):"";
-  updateSave();
-  if(!feat){set("unknown",img?"Mark the lining":"Waiting for photo","—",img?"Tap the pink inner eyelid to place the box.":"Load a photo and mark the eyelid lining.");mk.hidden=true;note(null);return}
-  if(!feat.usable){set("unknown","Retake photo","—","Fix the photo problems listed under the image, then try again.");mk.hidden=true;note(null);return}
-  if(!model){set("unknown","Not calibrated","—","Save at least 15 readings paired with a HemoCue result to switch on Hb estimates.");mk.hidden=true;note(null);return}
-  const c=cuts($("#cat").value,$("#age").value);
-  const hb=Math.max(3,Math.min(18,predict(model.m,feat)));
-  let b=band(hb,c);const border=Math.abs(hb-c.cut)<model.mae;
-  set(b,LABEL[b],`${hb.toFixed(1)} <small>± ${model.mae.toFixed(1)} g/dL estimated</small>`,border&&b!=="severe"?ACT.border:ACT[b]);
-  mk.hidden=false;mk.style.left=`calc(${Math.max(0,Math.min(1,(hb-3)/12))*100}% - 1.5px)`;
-  note({hb,b,c,border});
+  mk.hidden=true;
+  if(!feat)set("unknown",img?"Mark the lining":"Waiting for photo","—",img?"Tap the pink inner eyelid to place the box.":"Load a photo and mark the eyelid lining.");
+  else if(!feat.usable)set("unknown","Retake photo","—","Fix the photo problems listed under the image, then try again.");
+  else if(!model)set("unknown","Not calibrated","—","Save at least 15 screenings paired with a HemoCue result to switch on Hb estimates.");
+  else{
+    const c=cuts($("#cat").value,$("#age").value),hb=Math.max(3,Math.min(18,predict(model.m,feat))),b=band(hb,c);
+    const border=b==="none"&&hb-c.cut<model.mae;
+    result={hb,band:b,border,c};
+    set(border?"mild":b,border?"Borderline":LABEL[b],`${hb.toFixed(1)} <small>± ${model.mae.toFixed(1)} g/dL estimated</small>`,border?ACT.border:ACT[b]);
+    mk.hidden=false;mk.style.left=`calc(${Math.max(0,Math.min(1,(hb-3)/12))*100}% - 1.5px)`;
+  }
+  renderSaveBox();
 }
-function note(r){
-  if(!r){$("#refNote").textContent="No result yet.";return}
-  const g={pregnant:`Pregnant, trimester ${$("#tri").value}`,girl:"Adolescent girl, not pregnant",woman:"Woman, not pregnant"}[$("#cat").value];
+function refKind(){return result?(result.border?"border":result.band):null}
+function renderSaveBox(){
+  const k=refKind(),refer=k&&k!=="none";
+  $("#referToField").hidden=!refer;
+  $("#refLine").innerHTML=!result?"Get a screening result to see the referral plan.":
+    refer?`Referral will be created: blood Hb test due <strong>${fmtDate(addDays(today(),DUE[k]))}</strong> (${{severe:"today",moderate:"within 3 days",border:"within 7 days",mild:"by next ANC visit, 14 days"}[k]}). It will appear on the Follow-up worklist.`:
+    "No referral needed for this result. The screening is still counted in the programme insights.";
+  $("#saveRec").textContent=refer?"Save and create referral":"Save screening";
+  $("#saveRec").disabled=!(feat&&feat.usable&&$("#consent").checked);
+  note();
+}
+function note(){
+  if(!result){$("#refNote").textContent="No result yet.";return}
+  const k=refKind(),g={pregnant:`Pregnant, trimester ${$("#tri").value}`,girl:"Adolescent girl, not pregnant",woman:"Woman, not pregnant"}[$("#cat").value];
   $("#refNote").textContent=
 `OMUSAAYI ANAEMIA SCREEN: REFERRAL NOTE
-Date: ${new Date().toLocaleDateString("en-GB")}
+Date: ${fmtDate(today())} ${today().slice(0,4)}
 Client code: ${$("#code").value||"(not entered)"}
 Group: ${g}, age ${$("#age").value}
-Screen result: estimated Hb ${r.hb.toFixed(1)} g/dL (± ${model.mae.toFixed(1)})
-Flag: ${LABEL[r.b]}${r.border?" (borderline)":""} anaemia, WHO cut-off ${r.c.cut.toFixed(1)} g/dL
-Requested: confirm with HemoCue or full blood count
+Screened at: ${$("#site").value||"(site not entered)"}, ${$("#district").value}
+Screen result: estimated Hb ${result.hb.toFixed(1)} g/dL (± ${model.mae.toFixed(1)})
+Flag: ${k==="none"?"No flag":k==="border"?"Borderline":LABEL[k]+" anaemia"} (WHO cut-off ${result.c.cut.toFixed(1)} g/dL)
+${k==="none"?"No referral needed.":`Refer to: ${$("#referTo").value||"(facility)"}\nPlease confirm with HemoCue or full blood count by ${fmtDate(addDays(today(),DUE[k]))}.`}
 ${model.real?"":"NOTE: example model on simulated data, not valid for clinical use\n"}This is a screening result, not a diagnosis.`;
 }
 
 /* ---------- demo images ---------- */
 function demoImage(kind){
-  const c=document.createElement("canvas");c.width=900;c.height=600;const g=c.getContext("2d");
-  const r=rng(kind==="pale"?7:9);
-  let sk=g.createRadialGradient(450,260,40,450,300,520);sk.addColorStop(0,"#6B4430");sk.addColorStop(1,"#3B2418");g.fillStyle=sk;g.fillRect(0,0,900,600);
+  const c=document.createElement("canvas");c.width=900;c.height=600;const g=c.getContext("2d"),r=rng(kind==="pale"?7:9);
+  const sk=g.createRadialGradient(450,260,40,450,300,520);sk.addColorStop(0,"#6B4430");sk.addColorStop(1,"#3B2418");g.fillStyle=sk;g.fillRect(0,0,900,600);
   g.fillStyle="#F4F2EE";g.beginPath();g.ellipse(430,230,250,95,0,0,7);g.fill();
   g.fillStyle="#3A2A1E";g.beginPath();g.arc(430,230,78,0,7);g.fill();g.fillStyle="#0E0B09";g.beginPath();g.arc(430,230,34,0,7);g.fill();
   g.fillStyle="rgba(255,255,255,.85)";g.beginPath();g.arc(455,205,13,0,7);g.fill();
   const base=hbColour(kind==="pale"?8.3:14).map(Math.round);
-  let lg=g.createLinearGradient(0,320,0,430);
+  const lg=g.createLinearGradient(0,320,0,430);
   lg.addColorStop(0,`rgb(${base[0]+14},${base[1]+18},${base[2]+18})`);lg.addColorStop(1,`rgb(${base[0]-16},${base[1]-14},${base[2]-12})`);
   g.fillStyle=lg;g.beginPath();g.moveTo(190,325);g.quadraticCurveTo(430,300,670,325);g.quadraticCurveTo(440,470,190,325);g.fill();
   g.strokeStyle=`rgba(${base[0]-60},${base[1]-50},${base[2]-45},.55)`;g.lineWidth=2;
@@ -537,10 +685,7 @@ function demoImage(kind){
   g.fillStyle="#2A1810";g.beginPath();g.moveTo(170,330);g.quadraticCurveTo(440,500,690,330);g.quadraticCurveTo(440,560,170,330);g.fill();
   g.save();g.translate(720,430);g.rotate(-.12);g.fillStyle="#F7F6F2";g.fillRect(0,0,150,120);g.restore();
   const id=g.getImageData(0,0,900,600),d=id.data;for(let i=0;i<d.length;i+=4){const n=(r()-.5)*10;d[i]+=n;d[i+1]+=n;d[i+2]+=n}g.putImageData(id,0,0);
-  setImage(c,900,600);
-  roi={x:300,y:340,w:250,h:38};
-  white=sampleWhite({x:790,y:480});
-  demo=true;draw();analyse();
+  setImage(c,900,600);roi={x:300,y:340,w:250,h:38};white=sampleWhite({x:790,y:480});demo=true;setMode("lid");draw();analyse();
 }
 
 /* ---------- photo input ---------- */
@@ -553,94 +698,239 @@ $("#photo").addEventListener("change",e=>{const f=e.target.files&&e.target.files
   im.src=url;e.target.value=""});
 $("#demoPale").addEventListener("click",()=>demoImage("pale"));
 $("#demoHealthy").addEventListener("click",()=>demoImage("healthy"));
-function setMode(m){mode=m;$("#modeHint").textContent=m==="white"?"Tap the white paper once. To adjust the box first, press Place box on lining.":"Tap the pink lining to move the box there. On a computer you can also drag to draw it.";$("#modeLid").classList.toggle("on",m==="lid");$("#modeWhite").classList.toggle("on",m==="white");
+function setMode(m){mode=m;
+  $("#modeHint").textContent=m==="white"?"Tap the white paper once. To adjust the box first, press Place box on lining.":"Tap the pink lining to move the box there. On a computer you can also drag to draw it.";
+  $("#modeLid").classList.toggle("on",m==="lid");$("#modeWhite").classList.toggle("on",m==="white");
   $("#modeLid").setAttribute("aria-pressed",m==="lid");$("#modeWhite").setAttribute("aria-pressed",m==="white")}
 $("#modeLid").addEventListener("click",()=>setMode("lid"));
 $("#modeWhite").addEventListener("click",()=>setMode("white"));
 
 /* ---------- client fields ---------- */
 function syncFields(){const cat=$("#cat").value;$("#triField").hidden=cat!=="pregnant";
-  const a=$("#age");if(cat==="girl"){a.min=10;a.max=19;if(+a.value>19||+a.value<10)a.value=15}else{a.min=cat==="woman"?20:12;a.max=49}
+  const a=$("#age");if(cat==="girl"){a.min=10;a.max=19;if(+a.value>19||+a.value<10)a.value=15}else{a.min=cat==="woman"?20:12;a.max=49;if(cat==="woman"&&+a.value<20)a.value=24}
   analyse()}
 ["#cat","#age","#tri"].forEach(s=>$(s).addEventListener("change",syncFields));
-$("#code").addEventListener("input",()=>feat&&render(qcNow()));
-function qcNow(){return[...document.querySelectorAll("#qc li")].map(li=>[li.firstChild.className.replace("dot ",""),li.lastChild.textContent])}
+["#code","#site","#referTo","#district"].forEach(s=>$(s).addEventListener("input",note));
+$("#district").addEventListener("change",note);
+$("#consent").addEventListener("change",renderSaveBox);
+function siteOptions(){const s=new Set([...SIM_SITES.map(x=>x[0]),...state.records.map(r=>r.site).filter(Boolean),...state.records.map(r=>r.refer_to).filter(Boolean)]);
+  $("#siteList").innerHTML=[...s].sort().map(x=>`<option value="${esc(x)}"></option>`).join("")}
 
 /* ---------- saving ---------- */
-function updateSave(){$("#saveRec").disabled=!(feat&&feat.usable&&$("#consent").checked)}
-$("#consent").addEventListener("change",updateSave);
 $("#saveRec").addEventListener("click",()=>{
-  if(!feat)return;const lh=$("#labHb").value;
-  const cat=$("#cat").value;
-  state.records.push({id:"r"+Date.now().toString(36),timestamp:new Date().toISOString(),code:$("#code").value.trim(),group:cat,age:+$("#age").value,
-    trimester:cat==="pregnant"?+$("#tri").value:"",site:$("#site").value.trim(),
+  if(!feat||!feat.usable)return;
+  const lh=$("#labHb").value,cat=$("#cat").value,k=refKind(),refer=k&&k!=="none",now=new Date();
+  const rec={id:"r"+Date.now().toString(36),timestamp:now.toISOString(),code:$("#code").value.trim(),group:cat,age:+$("#age").value,
+    trimester:cat==="pregnant"?+$("#tri").value:"",district:$("#district").value,site:$("#site").value.trim(),
     ei:+feat.ei.toFixed(3),red_fraction:+feat.red_fraction.toFixed(4),a_star:+feat.a_star.toFixed(3),
     mean_r:+feat.mean_r.toFixed(1),mean_g:+feat.mean_g.toFixed(1),mean_b:+feat.mean_b.toFixed(1),white_ref:feat.white_ref,
-    lab_hb:lh===""?"":+(+lh).toFixed(1),example:demo?1:0});
-  persist();buildModel();refreshAll();
-  $("#labHb").value="";$("#consent").checked=false;updateSave();
-  toast(demo?"Saved as an example reading (demo photo).":lh===""?"Reading saved without a lab Hb.":"Paired reading saved.");
+    lab_hb:lh===""?"":+(+lh).toFixed(1),screen_hb:result?+result.hb.toFixed(1):"",screen_flag:result?result.band:"",borderline:result&&result.border?1:0,
+    referred:refer?1:0,refer_to:refer?($("#referTo").value.trim()||$("#site").value.trim()):"",due:refer?addDays(today(),DUE[k]):"",status:refer?"referred":"none",
+    confirm_hb:"",confirm_date:"",treatment:"",repeat_hb:"",repeat_date:"",updated:now.toISOString(),example:demo?1:0};
+  state.records.push(rec);persist();buildModel();refreshAll();
+  $("#labHb").value="";$("#consent").checked=false;renderSaveBox();
+  toast(demo?"Saved as an example record (demo photo).":refer?`Saved. Referral due ${fmtDate(rec.due)} is on the Follow-up worklist.`:"Screening saved.");
 });
 
+/* ---------- follow-up worklist ---------- */
+let openForm=null;
+function fuItems(){const site=$("#fuSite").value;return dataset().filter(r=>OPEN(r.status)&&(!site||r.site===site||r.refer_to===site))}
+function dueClass(r,T){return r.due<T?"overdue":r.due===T?"today":"later"}
+function renderFollow(){
+  const T=today(),all=dataset().filter(r=>OPEN(r.status));
+  const sites=[...new Set(dataset().filter(r=>+r.referred).map(r=>r.site).filter(Boolean))].sort(),cur=$("#fuSite").value;
+  $("#fuSite").innerHTML=`<option value="">All sites</option>`+sites.map(s=>`<option ${s===cur?"selected":""}>${esc(s)}</option>`).join("");
+  const items=fuItems().sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:0);
+  const od=items.filter(r=>r.due<T).length,td=items.filter(r=>r.due===T).length,wk=items.filter(r=>r.due>T&&r.due<=addDays(T,7)).length;
+  $("#fuBanner").innerHTML=realCount()?"":`<div class="banner">Showing <strong>simulated</strong> example clients. Your own referrals replace these as soon as you save a real screening.</div>`;
+  $("#fuSum").innerHTML=[[od,"Overdue",od?"crit":""],[td,"Due today",td?"warn":""],[wk,"Due in 7 days",""],[items.length,"Open in total",""]]
+    .map(s=>`<div class="sum ${s[2]}"><span class="label">${s[1]}</span><b>${s[0]}</b></div>`).join("");
+  const n=all.filter(r=>r.due<=T).length;const fc=$("#fuCount");fc.textContent=n;fc.classList.toggle("alert",n>0);
+  if(!items.length){$("#fuList").innerHTML=`<div class="panel"><p class="muted">No open referrals${$("#fuSite").value?" at this site":""}. Flagged screenings will appear here.</p></div>`;return}
+  $("#fuList").innerHTML=items.map(r=>{
+    const dc=dueClass(r,T),days=diffDays(T,r.due),c=cuts(r.group,r.age);
+    const when=dc==="overdue"?`<span class="chip crit">${-days} day${-days===1?"":"s"} overdue</span>`:dc==="today"?`<span class="chip warn">Due today</span>`:`<span class="chip muted">Due ${fmtDate(r.due)}</span>`;
+    const stage=r.status==="referred"?`Needs blood Hb confirmation${r.refer_to?` at ${esc(r.refer_to)}`:""}`:`On treatment (${esc(r.treatment||"started")}). Repeat Hb due${has(r.repeat_hb)?`, last ${(+r.repeat_hb).toFixed(1)} g/dL still below ${c.cut}`:""}`;
+    const flag=+r.borderline?"Borderline":LABEL[r.screen_flag]||"Flagged";
+    return`<article class="fu ${dc}">
+      <div class="top"><span class="who">${esc(r.code||"No code")} ${+r.example?'<span class="tag">example</span>':""}</span>${when}</div>
+      <p class="meta">${GL[r.group]||esc(r.group)}, ${esc(r.age)} · ${esc(r.site||"site not recorded")} · screened ${fmtDate(dateOf(r))} · est. ${has(r.screen_hb)?(+r.screen_hb).toFixed(1):"—"} g/dL, ${flag}${has(r.confirm_hb)?` · confirmed ${(+r.confirm_hb).toFixed(1)} g/dL`:""}</p>
+      <p><strong>${stage}</strong></p>
+      ${openForm===r.id?formFor(r):`<div class="btns"><button class="btn small primary" type="button" data-open="${esc(r.id)}">Record outcome</button></div>`}
+    </article>`}).join("");
+}
+function formFor(r){const id=esc(r.id),T=today();
+  if(r.status==="referred")return`<form data-form="${id}" data-kind="confirm">
+    <div class="fields">
+      <div class="field"><label for="fuHb-${id}">Confirmed Hb (g/dL)</label><input type="number" step="0.1" min="2" max="20" id="fuHb-${id}" placeholder="e.g. 9.6"></div>
+      <div class="field"><label for="fuDate-${id}">Date</label><input type="date" id="fuDate-${id}" value="${T}" max="${T}"></div>
+      <div class="field"><label for="fuTx-${id}">If anaemic</label><select id="fuTx-${id}"><option>Iron-folic acid started</option><option>Referred to higher level</option><option>Counselled only</option></select></div>
+    </div>
+    <div class="btns"><button class="btn small primary" type="submit">Save result</button><button class="btn small" type="button" data-lost="${id}">Mark lost to follow-up</button><button class="btn small" type="button" data-cancel="1">Cancel</button></div>
+  </form>`;
+  return`<form data-form="${id}" data-kind="repeat">
+    <div class="fields">
+      <div class="field"><label for="fuHb-${id}">Repeat Hb (g/dL)</label><input type="number" step="0.1" min="2" max="20" id="fuHb-${id}" placeholder="e.g. 11.4"></div>
+      <div class="field"><label for="fuDate-${id}">Date</label><input type="date" id="fuDate-${id}" value="${T}" max="${T}"></div>
+    </div>
+    <div class="btns"><button class="btn small primary" type="submit">Save repeat Hb</button><button class="btn small" type="button" data-lost="${id}">Mark lost to follow-up</button><button class="btn small" type="button" data-cancel="1">Cancel</button></div>
+  </form>`}
+$("#fuSite").addEventListener("change",renderFollow);
+$("#fuList").addEventListener("click",e=>{const t=e.target;
+  if(t.dataset.open){openForm=t.dataset.open;renderFollow();const i=document.getElementById("fuHb-"+openForm);i&&i.focus();return}
+  if(t.dataset.cancel){openForm=null;renderFollow();return}
+  if(t.dataset.lost){const r=state.records.find(x=>x.id===t.dataset.lost);if(!r)return;
+    if(t.dataset.armed!=="1"){t.dataset.armed="1";t.textContent="Tap again to confirm";setTimeout(()=>{t.dataset.armed="";t.textContent="Mark lost to follow-up"},3000);return}
+    r.status="lost";r.updated=new Date().toISOString();openForm=null;persist();refreshAll();toast(`${r.code||"Client"} recorded as lost to follow-up.`)}});
+$("#fuList").addEventListener("submit",e=>{e.preventDefault();const f=e.target,id=f.dataset.form,r=state.records.find(x=>x.id===id);if(!r)return;
+  const hb=$("#fuHb-"+CSS.escape(id)).value,dt=$("#fuDate-"+CSS.escape(id)).value||today();
+  if(hb===""||!isFinite(hb)){toast("Enter the Hb result in g/dL.");return}
+  const v=+(+hb).toFixed(1),c=cuts(r.group,r.age);
+  if(f.dataset.kind==="confirm"){r.confirm_hb=v;r.confirm_date=dt;
+    if(v<c.cut){r.treatment=$("#fuTx-"+CSS.escape(id)).value;r.status="treatment";r.due=addDays(dt,28);toast(`Anaemia confirmed. Repeat Hb due ${fmtDate(r.due)}.`)}
+    else{r.status="not_anaemic";toast("Not anaemic. Referral closed.")}}
+  else{r.repeat_hb=v;r.repeat_date=dt;
+    if(v>=c.cut){r.status="resolved";toast("Recovered. Follow-up closed.")}
+    else{r.due=addDays(dt,28);toast(`Still anaemic. Next check ${fmtDate(r.due)}; consider referral to a higher level.`)}}
+  r.updated=new Date().toISOString();openForm=null;persist();refreshAll()});
+
+/* ---------- insights ---------- */
+function inScope(){const p=+$("#inPeriod").value,dist=$("#inDistrict").value,T=today(),from=p?addDays(T,-p):"";
+  return dataset().filter(r=>(!from||dateOf(r)>=from)&&(!dist||r.district===dist))}
+function stats(S){const T=today(),pos=S.filter(r=>+r.referred);
+  const outc=pos.filter(r=>has(r.confirm_hb));
+  const anaemic=outc.filter(r=>+r.confirm_hb<cuts(r.group,r.age).cut);
+  const treated=anaemic.filter(r=>r.treatment);
+  const repeat=treated.filter(r=>has(r.repeat_hb));
+  const recovered=S.filter(r=>r.status==="resolved");
+  const lost=pos.filter(r=>r.status==="lost");
+  const dueSoFar=pos.filter(r=>has(r.confirm_hb)||r.status==="lost"||(r.status==="referred"&&r.due<=T));
+  const overdue=pos.filter(r=>OPEN(r.status)&&r.due<T);
+  const lag=outc.map(r=>diffDays(dateOf(r),r.confirm_date)).filter(x=>isFinite(x)&&x>=0);
+  return{n:S.length,pos,outc,anaemic,treated,repeat,recovered,lost,dueSoFar,overdue,lag:median(lag),
+    completion:dueSoFar.length?outc.length/dueSoFar.length:null,ppv:outc.length?anaemic.length/outc.length:null}}
+const pct=v=>v==null?"—":Math.round(v*100)+"%";
+function renderInsights(){
+  const S=inScope(),s=stats(S);
+  $("#inBanner").innerHTML=realCount()?`<div class="banner okb">Based on <strong>${realCount()}</strong> real screening records on this device and imports.</div>`:
+    `<div class="banner">These indicators use <strong>simulated</strong> example records to show what programme managers would see. They are not real data.</div>`;
+  $("#inKpi").innerHTML=[
+    ["Screened",s.n,"clients"],["Screen positive",pct(s.n?s.pos.length/s.n:null),`${s.pos.length} referred`],
+    ["Referral completion",pct(s.completion),`${s.outc.length} of ${s.dueSoFar.length} due`],
+    ["Overdue now",s.overdue.length,"open referrals past due"],
+    ["Lost to follow-up",pct(s.pos.length?s.lost.length/s.pos.length:null),`${s.lost.length} clients`],
+    ["Days to confirmation",s.lag==null?"—":s.lag,"median"]
+  ].map(k=>`<div class="metric"><span class="label">${k[0]}</span><b>${k[1]}</b><small>${k[2]}</small></div>`).join("");
+  const steps=[["Screened",s.n],["Screen positive, referred",s.pos.length],["Blood Hb confirmed",s.outc.length],["Anaemia confirmed",s.anaemic.length],["Treatment started",s.treated.length],["Repeat Hb done",s.repeat.length],["Recovered",s.recovered.length]];
+  $("#inCascade").innerHTML=steps.map((st,i)=>{const w=s.n?st[1]/s.n*100:0,prev=i?steps[i-1][1]:null,conv=i&&prev?Math.round(st[1]/prev*100)+"% of above":"";
+    return`<div class="cas" data-tip="${esc(st[0])}: ${st[1]} (${s.n?Math.round(st[1]/s.n*100):0}% of screened)"><span>${st[0]}</span><div class="track"><div class="fill" style="width:${w}%"></div></div><span class="v">${st[1]}<small>${conv}</small></span></div>`}).join("")
+    +`<p class="hint">${s.lost.length} referred client${s.lost.length===1?" was":"s were"} lost to follow-up and ${s.overdue.length} ${s.overdue.length===1?"is":"are"} overdue.</p>`;
+  renderMonthly(S);
+  const bySite={};S.forEach(r=>{const k=r.site||"(no site)";(bySite[k]=bySite[k]||[]).push(r)});
+  const chip=v=>v==null?`<span class="chip muted">no referrals due</span>`:`<span class="chip ${v<.6?"crit":v<.8?"warn":"ok"}">${pct(v)}</span>`;
+  const rows=Object.entries(bySite).map(([k,R])=>({k,d:R[0].district||"",st:stats(R)})).sort((a,b)=>(a.st.completion??2)-(b.st.completion??2));
+  $("#inSites").innerHTML=`<tr><th>Site</th><th>District</th><th class="num">Screened</th><th class="num">Positive</th><th>Completion</th><th class="num">Overdue</th><th class="num">Lost</th><th class="num">Recovered</th></tr>`+
+    (rows.length?rows.map(x=>`<tr><td>${esc(x.k)}</td><td>${esc(x.d)}</td><td class="num">${x.st.n}</td><td class="num">${pct(x.st.n?x.st.pos.length/x.st.n:null)}</td><td>${chip(x.st.completion)}</td><td class="num">${x.st.overdue.length}</td><td class="num">${x.st.lost.length}</td><td class="num">${x.st.recovered.length}</td></tr>`).join(""):`<tr><td colspan="8">No screenings in this period.</td></tr>`);
+  $("#inGroups").innerHTML=`<tr><th>Group</th><th class="num">Screened</th><th class="num">Screen positive</th><th class="num">Confirmed anaemic</th><th class="num">Positive screens confirmed</th></tr>`+
+    ["pregnant","girl","woman"].map(g=>{const st=stats(S.filter(r=>r.group===g));return`<tr><td>${GL[g]}</td><td class="num">${st.n}</td><td class="num">${pct(st.n?st.pos.length/st.n:null)}</td><td class="num">${st.anaemic.length}</td><td class="num">${pct(st.ppv)}</td></tr>`}).join("");
+  const csv=dhisCsv(S);$("#dhisPreview").textContent=csv.split("\n").slice(0,7).join("\n")+(csv.split("\n").length>7?`\n… ${csv.split("\n").length-7} more rows`:"");
+}
+function renderMonthly(S){
+  const by={};S.forEach(r=>{const m=dateOf(r).slice(0,7);if(!m)return;by[m]=by[m]||{n:0,p:0};by[m].n++;if(+r.referred)by[m].p++});
+  const ms=Object.keys(by).sort();if(!ms.length){$("#inMonthly").innerHTML=`<p class="muted">No screenings in this period.</p>`;return}
+  const W=460,H=250,L=36,R=8,T=16,B=34,max=Math.max(...ms.map(m=>by[m].n)),step=Math.max(1,Math.ceil(max/4/5)*5),top=Math.ceil(max/step)*step||1;
+  const bw=Math.min(64,(W-L-R)/ms.length*.6),gx=(W-L-R)/ms.length,y=v=>H-B-v/top*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Screenings per month, split into screen positive and negative">`;
+  for(let v=0;v<=top;v+=step)s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text>`;
+  ms.forEach((m,i)=>{const x=L+gx*i+(gx-bw)/2,d=by[m],lbl=new Date(m+"-01T00:00:00Z").toLocaleDateString("en-GB",{month:"short",year:"2-digit",timeZone:"UTC"});
+    const yp=y(d.p),yn=y(d.n),tip=`${lbl}: ${d.n} screened, ${d.p} positive (${Math.round(d.p/d.n*100)}%)`;
+    if(d.n>d.p)s+=`<path d="M${x},${yp-1} V${yn+4} q0,-4 4,-4 H${x+bw-4} q4,0 4,4 V${yp-1} Z" fill="var(--accent-mid)" data-tip="${tip}"/>`;
+    if(d.p)s+=`<rect x="${x}" y="${yp+(d.n>d.p?1:0)}" width="${bw}" height="${Math.max(0,H-B-yp-(d.n>d.p?1:0))}" fill="var(--accent)" ${d.n>d.p?"":`rx="0"`} data-tip="${tip}"/>`;
+    s+=`<text x="${x+bw/2}" y="${H-B+18}" text-anchor="middle" font-size="12" font-family="Atkinson Hyperlegible,sans-serif" fill="var(--muted)">${lbl}</text>`;
+    s+=`<text x="${x+bw/2}" y="${yn-6}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--ink)">${d.n}</text>`});
+  $("#inMonthly").innerHTML=s+`</svg>`;
+}
+function dhisCsv(S){
+  const out=["dataelement,period,orgunit,categoryoptioncombo,attributeoptioncombo,value"],agg={};
+  const add=(de,r)=>{const k=[de,dateOf(r).slice(0,7).replace("-",""),r.site||"Unknown site",GL[r.group]||r.group].join("\u0001");agg[k]=(agg[k]||0)+1};
+  S.forEach(r=>{add("OMU Anaemia screen - clients screened",r);
+    if(+r.referred)add("OMU Anaemia screen - screen positive referred",r);
+    if(has(r.confirm_hb)){add("OMU Anaemia screen - blood Hb confirmed",r);if(+r.confirm_hb<cuts(r.group,r.age).cut)add("OMU Anaemia screen - anaemia confirmed",r)}
+    if(r.treatment)add("OMU Anaemia screen - treatment started",r);
+    if(r.status==="resolved")add("OMU Anaemia screen - recovered",r);
+    if(r.status==="lost")add("OMU Anaemia screen - lost to follow-up",r)});
+  Object.keys(agg).sort().forEach(k=>{const[de,pe,ou,co]=k.split("\u0001");out.push([de,pe,ou,co,"",agg[k]].map(csvEsc).join(","))});
+  return out.join("\n");
+}
+["#inPeriod","#inDistrict"].forEach(s=>$(s).addEventListener("change",renderInsights));
+
 /* ---------- CSV ---------- */
-const COLS=["id","timestamp","code","group","age","trimester","site","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb","example"];
-function esc(v){v=v==null?"":String(v);return/[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
-function toCsv(){return[COLS.join(","),...state.records.map(r=>COLS.map(c=>esc(r[c])).join(","))].join("\n")}
+const COLS=["id","timestamp","code","group","age","trimester","district","site","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb",
+  "screen_hb","screen_flag","borderline","referred","refer_to","due","status","confirm_hb","confirm_date","treatment","repeat_hb","repeat_date","updated","example"];
+const NUMS=["age","trimester","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb","screen_hb","borderline","referred","confirm_hb","repeat_hb","example"];
+function csvEsc(v){v=v==null?"":String(v);return/[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
+function toCsv(){return[COLS.join(","),...state.records.map(r=>COLS.map(c=>csvEsc(r[c])).join(","))].join("\n")}
 function parseCsv(t){const rows=[];let row=[],cell="",q=false;
   for(let i=0;i<t.length;i++){const ch=t[i];
     if(q){if(ch==='"'){if(t[i+1]==='"'){cell+='"';i++}else q=false}else cell+=ch}
     else if(ch==='"')q=true;else if(ch===","){row.push(cell);cell=""}else if(ch==="\n"||ch==="\r"){if(ch==="\r"&&t[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}else cell+=ch}
   if(cell||row.length){row.push(cell);rows.push(row)}return rows.filter(r=>r.some(c=>c.trim()!==""))}
-async function copy(text,ok){try{await navigator.clipboard.writeText(text);toast(ok)}catch(e){const t=$("#csvOut");t.hidden=false;t.value=text;t.focus();t.select();toast("Copy blocked here. The text is selected below; copy it manually.")}}
-$("#copyCsv").addEventListener("click",()=>copy(toCsv(),`Copied ${state.records.length} readings as CSV.`));
-$("#copyNote").addEventListener("click",()=>copy($("#refNote").textContent,"Referral note copied."));
+async function copy(text,ok){try{await navigator.clipboard.writeText(text);toast(ok)}catch(e){const t=$("#csvOut");t.hidden=false;t.value=text;
+  document.querySelector('[data-tab="records"]').click();t.focus();t.select();toast("Copy was blocked here. The text is selected in the Records tab; copy it manually.")}}
 const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
-if(!framed){$("#dlCsv").hidden=false;$("#dlCsv").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([toCsv()],{type:"text/csv"}));a.download=`omusaayi-readings-${new Date().toISOString().slice(0,10)}.csv`;a.click()})}
+function download(text,name){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/csv"}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+const stamp=()=>today();
+$("#copyCsv").addEventListener("click",()=>copy(toCsv(),`Copied ${state.records.length} records as CSV.`));
+$("#copyNote").addEventListener("click",()=>copy($("#refNote").textContent,"Referral note copied."));
+$("#copyDhis").addEventListener("click",()=>copy(dhisCsv(inScope()),"DHIS2 CSV copied."));
+if(!framed){$("#dlCsv").hidden=false;$("#dlDhis").hidden=false;
+  $("#dlCsv").addEventListener("click",()=>download(toCsv(),`omusaayi-records-${stamp()}.csv`));
+  $("#dlDhis").addEventListener("click",()=>download(dhisCsv(inScope()),`omusaayi-dhis2-${stamp()}.csv`))}
 $("#doImport").addEventListener("click",()=>{
-  const rows=parseCsv($("#importBox").value.trim());if(rows.length<2){toast("Paste a CSV with a header row and at least one reading.");return}
+  const rows=parseCsv($("#importBox").value.trim());if(rows.length<2){toast("Paste a CSV with a header row and at least one record.");return}
   const h=rows[0].map(s=>s.trim());if(!["ei","red_fraction","a_star"].every(c=>h.includes(c))){toast("That CSV is missing the ei, red_fraction or a_star columns.");return}
-  const have=new Set(state.records.map(r=>r.id));let added=0;
-  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]??"");
-    ["age","trimester","ei","red_fraction","a_star","mean_r","mean_g","mean_b","white_ref","lab_hb","example"].forEach(k=>{if(o[k]!==""&&o[k]!=null&&isFinite(o[k]))o[k]=+o[k]});
-    if(!o.id)o.id="i"+Math.random().toString(36).slice(2,9);if(have.has(o.id))return;have.add(o.id);state.records.push(o);added++});
-  persist();buildModel();refreshAll();$("#importBox").value="";toast(`Imported ${added} new reading${added===1?"":"s"}.`)});
-$("#clearEx").addEventListener("click",()=>{const n=state.records.filter(r=>+r.example).length;if(!n){toast("There is no example data left.");return}
-  state.records=state.records.filter(r=>!+r.example);persist();buildModel();refreshAll();toast(`Removed ${n} example readings.`)});
+  let added=0,updated=0;
+  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]??"");NUMS.forEach(k=>{if(has(o[k]))o[k]=+o[k]});
+    if(!o.status)o.status="none";if(!o.id)o.id="i"+Math.random().toString(36).slice(2,9);
+    const ex=state.records.findIndex(x=>x.id===o.id);
+    if(ex<0){state.records.push(o);added++}else if(String(o.updated||"")>String(state.records[ex].updated||"")){state.records[ex]={...state.records[ex],...o};updated++}});
+  persist();buildModel();refreshAll();$("#importBox").value="";toast(`Imported ${added} new and updated ${updated} record${updated===1?"":"s"}.`)});
+$("#clearEx").addEventListener("click",e=>{const b=e.target,n=state.records.filter(r=>+r.example).length;if(!n){toast("There is no example data left.");return}
+  if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent=`Tap again to remove ${n} examples`;setTimeout(()=>{b.dataset.armed="";b.textContent="Remove example data"},3000);return}
+  state.records=state.records.filter(r=>!+r.example);persist();buildModel();refreshAll();toast(`Removed ${n} example records.`)});
 
 /* ---------- records table ---------- */
 function renderTable(){
   $("#recCount").textContent=state.records.length;
   const t=$("#recTable");
-  if(!state.records.length){t.innerHTML=`<tr><td>No readings yet. Screen a client and tick consent to save the first one.</td></tr>`;return}
-  const gl={pregnant:"Pregnant",girl:"Girl",woman:"Woman"};
-  t.innerHTML=`<tr><th>Date</th><th>Code</th><th>Group</th><th class="num">Age</th><th>Site</th><th class="num">EI</th><th class="num">Red %</th><th class="num">a*</th><th class="num">Lab Hb</th><th></th></tr>`+
-    state.records.slice().reverse().map(r=>`<tr class="${+r.example?"ex":""}"><td class="num">${String(r.timestamp).slice(0,10)}</td><td>${esc2(r.code)} ${+r.example?'<span class="tag">example</span>':""}</td><td>${gl[r.group]||esc2(r.group)}</td><td class="num">${esc2(r.age)}</td><td>${esc2(r.site)}</td><td class="num">${fmt(r.ei,1)}</td><td class="num">${fmt(r.red_fraction*100,0)}</td><td class="num">${fmt(r.a_star,1)}</td><td class="num">${r.lab_hb===""?"—":fmt(r.lab_hb,1)}</td><td><button class="btn small" data-del="${esc2(r.id)}" type="button" aria-label="Delete reading ${esc2(r.code)}">Delete</button></td></tr>`).join("");
+  if(!state.records.length){t.innerHTML=`<tr><td>No records yet. Screen a client and tick consent to save the first one.</td></tr>`;return}
+  t.innerHTML=`<tr><th>Date</th><th>Code</th><th>Group</th><th class="num">Age</th><th>Site</th><th class="num">Screen Hb</th><th>Status</th><th class="num">Lab Hb</th><th class="num">EI</th><th></th></tr>`+
+    state.records.slice().sort((a,b)=>String(b.timestamp).localeCompare(String(a.timestamp))).map(r=>`<tr class="${+r.example?"ex":""}"><td class="num">${dateOf(r)}</td><td>${esc(r.code)} ${+r.example?'<span class="tag">example</span>':""}</td><td>${GL[r.group]||esc(r.group)}</td><td class="num">${esc(r.age)}</td><td>${esc(r.site)}</td><td class="num">${fmt(r.screen_hb,1)}</td><td>${STATUS[r.status]||"—"}</td><td class="num">${fmt(r.lab_hb,1)}</td><td class="num">${fmt(r.ei,1)}</td><td><button class="btn small" data-del="${esc(r.id)}" type="button" aria-label="Delete record ${esc(r.code)}">Delete</button></td></tr>`).join("");
 }
-function fmt(v,d){return v===""||v==null||!isFinite(v)?"—":(+v).toFixed(d)}
-function esc2(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmt(v,d){return has(v)?(+v).toFixed(d):"—"}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 $("#recTable").addEventListener("click",e=>{const id=e.target.dataset&&e.target.dataset.del;if(!id)return;
   const b=e.target;if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Confirm";setTimeout(()=>{b.dataset.armed="";b.textContent="Delete"},3000);return}
-  state.records=state.records.filter(r=>r.id!==id);persist();buildModel();refreshAll();toast("Reading deleted.")});
+  state.records=state.records.filter(r=>r.id!==id);persist();buildModel();refreshAll();toast("Record deleted.")});
 
 /* ---------- calibration view ---------- */
 function renderCalib(){
   const cb=$("#calibBanner"),mt=$("#metrics"),ch=$("#chart"),co=$("#coef");
-  if(!model){cb.innerHTML=`<div class="banner">Not enough paired readings to fit a model. Save at least 15 readings with a HemoCue result.</div>`;mt.innerHTML="";ch.innerHTML="";co.textContent="No model.";return}
+  if(!model){cb.innerHTML=`<div class="banner">Not enough paired readings to fit a model. Save at least 15 screenings with a HemoCue result.</div>`;mt.innerHTML="";ch.innerHTML="";co.textContent="No model.";return}
   cb.innerHTML=model.real?`<div class="banner okb">Trained on <strong>${model.n}</strong> real HemoCue-paired readings from this device and imports.</div>`:
     `<div class="banner">Running on <strong>${model.n} simulated</strong> example readings. ${model.realCount} of 15 real paired readings collected so far.</div>`;
-  const pc=v=>(v*100).toFixed(0)+"%";
-  mt.innerHTML=[["Readings",model.n],["Mean error",model.mae.toFixed(2)+" g/dL"],["R² (leave-one-out)",model.r2.toFixed(2)],["Sensitivity",pc(model.sens)],["Specificity",pc(model.spec)]]
+  mt.innerHTML=[["Readings",model.n],["Mean error",model.mae.toFixed(2)+" g/dL"],["R² (leave-one-out)",model.r2.toFixed(2)],["Sensitivity",pct(model.sens)],["Specificity",pct(model.spec)]]
     .map(m=>`<div class="metric"><span class="label">${m[0]}</span><b>${m[1]}</b></div>`).join("");
   const W=640,H=420,L=56,R=16,T=16,B=48,lo=5,hi=16;
   const sx=v=>L+(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(W-L-R),sy=v=>H-B-(Math.max(lo,Math.min(hi,v))-lo)/(hi-lo)*(H-T-B);
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Measured versus predicted haemoglobin">`;
   s+=`<rect x="${L}" y="${sy(11)}" width="${sx(11)-L}" height="${H-B-sy(11)}" fill="var(--crit-soft)"/>`;
   for(let v=lo;v<=hi;v++){s+=`<line x1="${L}" x2="${W-R}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/><line y1="${T}" y2="${H-B}" x1="${sx(v)}" x2="${sx(v)}" stroke="var(--line)" stroke-width="1"/>`;
-    if(v%2===0||v===hi){s+=`<text x="${sx(v)}" y="${H-B+18}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text><text x="${L-8}" y="${sy(v)+4}" text-anchor="end" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text>`}}
+    if(v%2===0)s+=`<text x="${sx(v)}" y="${H-B+18}" text-anchor="middle" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text><text x="${L-8}" y="${sy(v)+4}" text-anchor="end" font-size="12" font-family="IBM Plex Mono,monospace" fill="var(--muted)">${v}</text>`}
   s+=`<line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="var(--muted)" stroke-dasharray="5 5" stroke-width="1.5"/>`;
   s+=`<line x1="${sx(11)}" x2="${sx(11)}" y1="${T}" y2="${H-B}" stroke="var(--accent)" stroke-width="1.5"/><line x1="${L}" x2="${W-R}" y1="${sy(11)}" y2="${sy(11)}" stroke="var(--accent)" stroke-width="1.5"/>`;
   s+=`<text x="${sx(11)+6}" y="${T+14}" font-size="12" fill="var(--accent)" font-family="Atkinson Hyperlegible,sans-serif">11 g/dL</text>`;
-  model.loo.forEach(o=>{s+=`<circle cx="${sx(o.y)}" cy="${sy(o.p)}" r="5" fill="var(--accent)" fill-opacity=".7" stroke="var(--surface)" stroke-width="1"/>`});
+  model.loo.forEach(o=>{s+=`<circle cx="${sx(o.y)}" cy="${sy(o.p)}" r="5" fill="var(--accent)" fill-opacity=".7" stroke="var(--surface)" stroke-width="2" data-tip="Measured ${o.y.toFixed(1)}, predicted ${o.p.toFixed(1)} g/dL"/>`});
   s+=`<text x="${(L+W-R)/2}" y="${H-10}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible,sans-serif">Measured Hb, HemoCue (g/dL)</text>`;
   s+=`<text transform="translate(16 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible,sans-serif">Predicted Hb (g/dL)</text></svg>`;
   ch.innerHTML=s;
@@ -655,13 +945,18 @@ Anaemia detection (group-specific WHO cut-off):
 }
 
 /* ---------- misc ---------- */
-let tt;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2800)}
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3200)}
+const tip=$("#tip");let tipT;
+function showTip(el,x,y){tip.textContent=el.getAttribute("data-tip");tip.hidden=false;
+  const w=tip.offsetWidth,h=tip.offsetHeight;tip.style.left=Math.max(8,Math.min(innerWidth-w-8,x+12))+"px";tip.style.top=Math.max(8,y-h-12)+"px"}
+document.addEventListener("pointermove",e=>{const el=e.target.closest&&e.target.closest("[data-tip]");if(el&&e.pointerType==="mouse")showTip(el,e.clientX,e.clientY);else if(e.pointerType==="mouse")tip.hidden=true});
+document.addEventListener("pointerdown",e=>{const el=e.target.closest&&e.target.closest("[data-tip]");if(el&&e.pointerType!=="mouse"){showTip(el,e.clientX,e.clientY);clearTimeout(tipT);tipT=setTimeout(()=>tip.hidden=true,2500)}else if(!el)tip.hidden=true});
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
-  ["screen","calib","records","method"].forEach(id=>$("#"+id).hidden=id!==b.dataset.tab);
-  try{localStorage.setItem(KEY+".tab",b.dataset.tab)}catch(e){}
+  ["screen","follow","insights","calib","records","method"].forEach(id=>$("#"+id).hidden=id!==b.dataset.tab);
+  tip.hidden=true;try{localStorage.setItem(KEY+".tab",b.dataset.tab)}catch(e){}
 }));
-function refreshAll(){renderTable();renderCalib();analyse()}
+function refreshAll(){siteOptions();renderTable();renderCalib();renderFollow();renderInsights();analyse()}
 
 buildModel();
 syncFields();
